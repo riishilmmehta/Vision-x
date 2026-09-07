@@ -1,0 +1,4007 @@
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="theme-color" content="#030507">
+<title>VISION-X // PERCEPTION ENGINE</title>
+
+<!-- Browser AI -->
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3"></script>
+
+<style>
+/* =========================================================
+   VISION-X
+   Futuristic Computer Vision Interface
+========================================================= */
+
+*{
+    box-sizing:border-box;
+    margin:0;
+    padding:0;
+}
+
+:root{
+    --bg:#030507;
+    --panel:rgba(8,11,15,.78);
+    --panel2:rgba(12,16,21,.9);
+    --line:rgba(255,255,255,.075);
+
+    --cyan:#68e8ff;
+    --cyan2:#27b9dc;
+
+    --green:#6ff5ae;
+    --yellow:#ffc66b;
+    --red:#ff607b;
+    --purple:#a98cff;
+
+    --text:#f2f6fa;
+    --muted:#68737e;
+    --muted2:#3f4852;
+}
+
+html,
+body{
+    width:100%;
+    height:100%;
+    overflow:hidden;
+}
+
+body{
+    background:
+        radial-gradient(
+            circle at 50% 45%,
+            rgba(104,232,255,.045),
+            transparent 38%
+        ),
+        radial-gradient(
+            circle at 10% 90%,
+            rgba(169,140,255,.035),
+            transparent 30%
+        ),
+        var(--bg);
+
+    color:var(--text);
+
+    font-family:
+        Inter,
+        ui-sans-serif,
+        system-ui,
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        sans-serif;
+}
+
+/* =========================================================
+   GLOBAL
+========================================================= */
+
+button,
+input,
+select{
+    font:inherit;
+}
+
+button{
+    cursor:pointer;
+}
+
+::-webkit-scrollbar{
+    width:3px;
+    height:3px;
+}
+
+::-webkit-scrollbar-thumb{
+    background:#38434d;
+}
+
+.hidden{
+    display:none!important;
+}
+
+/* =========================================================
+   APPLICATION
+========================================================= */
+
+#app{
+    position:relative;
+    width:100vw;
+    height:100vh;
+    overflow:hidden;
+    background:#030507;
+}
+
+/* =========================================================
+   CAMERA
+========================================================= */
+
+#video{
+    position:absolute;
+    inset:0;
+
+    width:100%;
+    height:100%;
+
+    object-fit:cover;
+
+    background:#010203;
+
+    transition:
+        filter .5s ease,
+        opacity .5s ease;
+}
+
+#video.paused{
+    filter:
+        brightness(.65)
+        saturate(.7);
+}
+
+#overlay{
+    position:absolute;
+    inset:0;
+
+    width:100%;
+    height:100%;
+
+    pointer-events:none;
+
+    z-index:4;
+}
+
+/* cinematic glass */
+
+.cinema{
+    position:absolute;
+    inset:0;
+
+    pointer-events:none;
+
+    z-index:5;
+
+    background:
+        radial-gradient(
+            ellipse at center,
+            transparent 28%,
+            rgba(0,0,0,.24) 100%
+        );
+}
+
+/* =========================================================
+   AMBIENT GRID
+========================================================= */
+
+.grid{
+    position:absolute;
+    inset:0;
+
+    pointer-events:none;
+
+    z-index:2;
+
+    opacity:.08;
+
+    background-image:
+        linear-gradient(
+            rgba(104,232,255,.22) 1px,
+            transparent 1px
+        ),
+        linear-gradient(
+            90deg,
+            rgba(104,232,255,.22) 1px,
+            transparent 1px
+        );
+
+    background-size:
+        80px 80px;
+
+    mask-image:
+        radial-gradient(
+            circle at center,
+            black,
+            transparent 80%
+        );
+
+    animation:gridMove 22s linear infinite;
+}
+
+@keyframes gridMove{
+    from{
+        transform:translateY(0);
+    }
+
+    to{
+        transform:translateY(80px);
+    }
+}
+
+/* =========================================================
+   SCANNER
+========================================================= */
+
+.scanner{
+    position:absolute;
+
+    top:-5%;
+    left:0;
+    right:0;
+
+    height:1px;
+
+    z-index:6;
+
+    background:
+        linear-gradient(
+            90deg,
+            transparent,
+            rgba(104,232,255,.7),
+            transparent
+        );
+
+    box-shadow:
+        0 0 20px rgba(104,232,255,.6);
+
+    opacity:.28;
+
+    animation:
+        scan 7s linear infinite;
+}
+
+@keyframes scan{
+    from{
+        top:-5%;
+    }
+
+    to{
+        top:105%;
+    }
+}
+
+/* =========================================================
+   TOP BAR
+========================================================= */
+
+.topbar{
+    position:absolute;
+
+    top:0;
+    left:0;
+    right:0;
+
+    height:84px;
+
+    z-index:20;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:space-between;
+
+    padding:
+        16px 24px;
+
+    pointer-events:none;
+
+    background:
+        linear-gradient(
+            180deg,
+            rgba(2,4,6,.88),
+            rgba(2,4,6,.2),
+            transparent
+        );
+}
+
+.brand{
+    display:flex;
+    align-items:center;
+    gap:13px;
+}
+
+.brand-orbit{
+    width:37px;
+    height:37px;
+
+    border:
+        1px solid
+        rgba(104,232,255,.5);
+
+    border-radius:50%;
+
+    position:relative;
+
+    animation:
+        orbit 8s linear infinite;
+}
+
+.brand-orbit:before{
+    content:"";
+
+    position:absolute;
+
+    inset:7px;
+
+    border:
+        1px solid
+        rgba(104,232,255,.3);
+
+    border-radius:50%;
+}
+
+.brand-orbit:after{
+    content:"";
+
+    position:absolute;
+
+    width:6px;
+    height:6px;
+
+    top:3px;
+    left:50%;
+
+    transform:
+        translateX(-50%);
+
+    background:
+        var(--cyan);
+
+    border-radius:50%;
+
+    box-shadow:
+        0 0 15px var(--cyan);
+}
+
+@keyframes orbit{
+    to{
+        transform:rotate(360deg);
+    }
+}
+
+.brand-title{
+    font-size:13px;
+    font-weight:700;
+
+    letter-spacing:4px;
+}
+
+.brand-sub{
+    margin-top:4px;
+
+    font-size:7px;
+
+    color:var(--muted);
+
+    letter-spacing:2.5px;
+}
+
+.top-right{
+    display:flex;
+    align-items:center;
+    gap:20px;
+
+    pointer-events:auto;
+}
+
+.readout{
+    color:#67727d;
+    font-size:8px;
+    letter-spacing:1px;
+}
+
+.readout b{
+    color:#dbe3ea;
+    font-weight:500;
+}
+
+.live{
+    display:flex;
+    align-items:center;
+    gap:7px;
+
+    padding:
+        8px 11px;
+
+    border:
+        1px solid
+        rgba(111,245,174,.22);
+
+    background:
+        rgba(111,245,174,.045);
+
+    border-radius:5px;
+
+    color:var(--green);
+
+    font-size:8px;
+    letter-spacing:2px;
+}
+
+.live-dot{
+    width:5px;
+    height:5px;
+
+    border-radius:50%;
+
+    background:var(--green);
+
+    box-shadow:
+        0 0 12px var(--green);
+
+    animation:
+        livePulse 1.4s infinite;
+}
+
+@keyframes livePulse{
+    50%{
+        opacity:.2;
+    }
+}
+
+/* =========================================================
+   LEFT HUD
+========================================================= */
+
+.left-hud{
+    position:absolute;
+
+    top:112px;
+    left:24px;
+
+    z-index:15;
+
+    width:175px;
+
+    pointer-events:none;
+}
+
+.hud-block{
+    border-left:
+        1px solid
+        rgba(104,232,255,.27);
+
+    padding-left:12px;
+
+    margin-bottom:23px;
+}
+
+.hud-label{
+    font-size:7px;
+
+    color:#56616d;
+
+    letter-spacing:2px;
+
+    margin-bottom:6px;
+}
+
+.hud-value{
+    font-size:24px;
+
+    font-weight:600;
+
+    line-height:1;
+}
+
+.hud-value small{
+    color:#626d78;
+
+    font-size:7px;
+
+    font-weight:400;
+
+    margin-left:4px;
+
+    letter-spacing:1px;
+}
+
+.hud-line{
+    height:1px;
+
+    margin-top:9px;
+
+    background:
+        rgba(255,255,255,.055);
+}
+
+.vector{
+    display:flex;
+
+    align-items:center;
+
+    gap:8px;
+
+    color:#9ba5af;
+
+    font-size:9px;
+}
+
+.vector-arrow{
+    color:var(--cyan);
+
+    font-size:18px;
+
+    transition:.3s;
+}
+
+/* =========================================================
+   CAMERA CORNERS
+========================================================= */
+
+.corner{
+    position:absolute;
+
+    z-index:7;
+
+    width:45px;
+    height:45px;
+
+    pointer-events:none;
+
+    opacity:.55;
+}
+
+.corner.tl{
+    top:103px;
+    left:24px;
+
+    border-top:
+        1px solid
+        var(--cyan);
+
+    border-left:
+        1px solid
+        var(--cyan);
+}
+
+.corner.tr{
+    top:103px;
+    right:331px;
+
+    border-top:
+        1px solid
+        var(--cyan);
+
+    border-right:
+        1px solid
+        var(--cyan);
+}
+
+.corner.bl{
+    bottom:83px;
+    left:24px;
+
+    border-bottom:
+        1px solid
+        var(--cyan);
+
+    border-left:
+        1px solid
+        var(--cyan);
+}
+
+.corner.br{
+    bottom:83px;
+    right:331px;
+
+    border-bottom:
+        1px solid
+        var(--cyan);
+
+    border-right:
+        1px solid
+        var(--cyan);
+}
+
+/* =========================================================
+   RIGHT INTELLIGENCE PANEL
+========================================================= */
+
+.intelligence{
+    position:absolute;
+
+    z-index:18;
+
+    top:103px;
+    right:22px;
+    bottom:77px;
+
+    width:285px;
+
+    display:flex;
+    flex-direction:column;
+
+    gap:10px;
+
+    pointer-events:none;
+}
+
+.panel{
+    background:
+        linear-gradient(
+            145deg,
+            rgba(10,14,19,.91),
+            rgba(4,7,10,.82)
+        );
+
+    border:
+        1px solid
+        var(--line);
+
+    backdrop-filter:
+        blur(18px);
+
+    -webkit-backdrop-filter:
+        blur(18px);
+
+    border-radius:7px;
+
+    box-shadow:
+        0 15px 50px
+        rgba(0,0,0,.25);
+
+    pointer-events:auto;
+}
+
+.panel-header{
+    height:48px;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:space-between;
+
+    padding:
+        0 14px;
+
+    border-bottom:
+        1px solid
+        var(--line);
+}
+
+.panel-title{
+    font-size:8px;
+
+    font-weight:600;
+
+    letter-spacing:2px;
+}
+
+.panel-count{
+    color:var(--cyan);
+
+    font-size:8px;
+
+    letter-spacing:1px;
+}
+
+.object-list{
+    overflow:auto;
+
+    max-height:410px;
+}
+
+.object{
+    position:relative;
+
+    display:grid;
+
+    grid-template-columns:
+        29px 1fr auto;
+
+    gap:10px;
+
+    padding:
+        12px 13px;
+
+    border-bottom:
+        1px solid
+        rgba(255,255,255,.04);
+
+    animation:
+        objectIn .25s ease both;
+}
+
+@keyframes objectIn{
+    from{
+        opacity:0;
+        transform:
+            translateX(10px);
+    }
+
+    to{
+        opacity:1;
+        transform:
+            translateX(0);
+    }
+}
+
+.object-symbol{
+    width:28px;
+    height:28px;
+
+    display:grid;
+
+    place-items:center;
+
+    border:
+        1px solid
+        rgba(255,255,255,.1);
+
+    border-radius:5px;
+
+    font-size:10px;
+}
+
+.object-name{
+    font-size:10px;
+
+    font-weight:600;
+}
+
+.object-info{
+    margin-top:4px;
+
+    color:#606b76;
+
+    font-size:7px;
+
+    letter-spacing:.5px;
+}
+
+.object-state{
+    display:inline-block;
+
+    margin-top:6px;
+
+    padding:
+        3px 5px;
+
+    border-radius:3px;
+
+    font-size:6px;
+
+    letter-spacing:1px;
+}
+
+.state-moving{
+    color:var(--cyan);
+
+    background:
+        rgba(104,232,255,.07);
+}
+
+.state-still{
+    color:#7b858f;
+
+    background:
+        rgba(255,255,255,.035);
+}
+
+.object-id{
+    font-size:7px;
+
+    color:#4f5964;
+
+    letter-spacing:1px;
+}
+
+/* =========================================================
+   RADAR
+========================================================= */
+
+.radar-panel{
+    padding:14px;
+
+    flex:1;
+
+    min-height:180px;
+}
+
+.radar-title{
+    display:flex;
+    justify-content:space-between;
+
+    margin-bottom:10px;
+}
+
+.radar-title span{
+    color:#55616c;
+
+    font-size:7px;
+
+    letter-spacing:2px;
+}
+
+.radar{
+    width:170px;
+    height:170px;
+
+    margin:
+        8px auto;
+
+    position:relative;
+
+    border:
+        1px solid
+        rgba(104,232,255,.17);
+
+    border-radius:50%;
+
+    overflow:hidden;
+
+    background:
+        radial-gradient(
+            circle,
+            transparent 0 18%,
+            rgba(104,232,255,.025) 18.5% 19%,
+            transparent 19.5% 39%,
+            rgba(104,232,255,.025) 39.5% 40%,
+            transparent 40.5% 60%,
+            rgba(104,232,255,.025) 60.5% 61%,
+            transparent 61.5%
+        );
+}
+
+.radar:before{
+    content:"";
+
+    position:absolute;
+
+    left:50%;
+    top:0;
+    bottom:0;
+
+    width:1px;
+
+    background:
+        rgba(104,232,255,.1);
+}
+
+.radar:after{
+    content:"";
+
+    position:absolute;
+
+    top:50%;
+    left:0;
+    right:0;
+
+    height:1px;
+
+    background:
+        rgba(104,232,255,.1);
+}
+
+.sweep{
+    position:absolute;
+
+    width:50%;
+    height:50%;
+
+    left:50%;
+    bottom:50%;
+
+    transform-origin:
+        0 100%;
+
+    background:
+        conic-gradient(
+            from 0deg,
+            rgba(104,232,255,.28),
+            transparent 48deg
+        );
+
+    animation:
+        sweep 3.5s linear infinite;
+}
+
+@keyframes sweep{
+    to{
+        transform:rotate(360deg);
+    }
+}
+
+.radar-center{
+    position:absolute;
+
+    left:50%;
+    top:50%;
+
+    width:6px;
+    height:6px;
+
+    transform:
+        translate(-50%,-50%);
+
+    border-radius:50%;
+
+    background:var(--cyan);
+
+    box-shadow:
+        0 0 18px var(--cyan);
+}
+
+/* radar object */
+
+.radar-dot{
+    position:absolute;
+
+    width:4px;
+    height:4px;
+
+    border-radius:50%;
+
+    background:var(--cyan);
+
+    box-shadow:
+        0 0 9px var(--cyan);
+
+    transition:
+        left .3s,
+        top .3s;
+}
+
+/* =========================================================
+   BOTTOM BAR
+========================================================= */
+
+.bottom{
+    position:absolute;
+
+    left:22px;
+    right:22px;
+    bottom:17px;
+
+    height:44px;
+
+    z-index:25;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:space-between;
+
+    pointer-events:none;
+}
+
+.event{
+    display:flex;
+
+    align-items:center;
+
+    gap:10px;
+
+    min-width:0;
+
+    max-width:58%;
+}
+
+.event-dot{
+    width:5px;
+    height:5px;
+
+    flex:none;
+
+    border-radius:50%;
+
+    background:var(--cyan);
+
+    box-shadow:
+        0 0 10px var(--cyan);
+}
+
+.event-message{
+    color:#929ca7;
+
+    font-size:8px;
+
+    white-space:nowrap;
+
+    overflow:hidden;
+
+    text-overflow:ellipsis;
+}
+
+.event-time{
+    color:#4d5762;
+
+    font-size:7px;
+
+    white-space:nowrap;
+}
+
+.controls{
+    display:flex;
+
+    gap:6px;
+
+    pointer-events:auto;
+}
+
+.btn{
+    height:32px;
+
+    padding:
+        0 11px;
+
+    border:
+        1px solid
+        rgba(255,255,255,.08);
+
+    background:
+        rgba(5,8,11,.82);
+
+    color:#8d98a3;
+
+    border-radius:4px;
+
+    font-size:7px;
+
+    letter-spacing:1px;
+
+    transition:
+        border-color .2s,
+        color .2s,
+        background .2s,
+        transform .2s;
+}
+
+.btn:hover{
+    border-color:
+        rgba(104,232,255,.3);
+
+    color:var(--cyan);
+
+    transform:
+        translateY(-1px);
+}
+
+.btn.primary{
+    background:
+        var(--cyan);
+
+    border-color:
+        var(--cyan);
+
+    color:#031015;
+
+    font-weight:700;
+}
+
+/* =========================================================
+   START SCREEN
+========================================================= */
+
+.boot{
+    position:absolute;
+
+    inset:0;
+
+    z-index:100;
+
+    display:flex;
+
+    align-items:center;
+
+    justify-content:center;
+
+    background:
+        radial-gradient(
+            circle at center,
+            rgba(104,232,255,.055),
+            transparent 30%
+        ),
+        #030507;
+
+    transition:
+        opacity .7s ease,
+        visibility .7s ease;
+}
+
+.boot.hide{
+    opacity:0;
+    visibility:hidden;
+    pointer-events:none;
+}
+
+.boot-content{
+    width:min(560px,90vw);
+
+    text-align:center;
+}
+
+.core{
+    position:relative;
+
+    width:92px;
+    height:92px;
+
+    margin:
+        0 auto 30px;
+
+    border:
+        1px solid
+        rgba(104,232,255,.42);
+
+    border-radius:50%;
+
+    display:grid;
+
+    place-items:center;
+}
+
+.core:before{
+    content:"";
+
+    width:56px;
+    height:56px;
+
+    border:
+        1px solid
+        rgba(104,232,255,.28);
+
+    border-radius:50%;
+
+    animation:
+        corePulse 2s infinite;
+}
+
+.core:after{
+    content:"";
+
+    position:absolute;
+
+    width:8px;
+    height:8px;
+
+    background:var(--cyan);
+
+    border-radius:50%;
+
+    box-shadow:
+        0 0 30px
+        var(--cyan);
+}
+
+@keyframes corePulse{
+    50%{
+        transform:scale(1.12);
+
+        opacity:.5;
+    }
+}
+
+.boot h1{
+    font-size:30px;
+
+    font-weight:600;
+
+    letter-spacing:9px;
+}
+
+.boot h2{
+    margin-top:9px;
+
+    color:#626d78;
+
+    font-size:8px;
+
+    letter-spacing:4px;
+
+    font-weight:400;
+}
+
+.boot-description{
+    margin:
+        25px auto;
+
+    max-width:430px;
+
+    color:#68737d;
+
+    font-size:10px;
+
+    line-height:1.8;
+}
+
+.launch{
+    padding:
+        13px 24px;
+
+    border:
+        1px solid
+        rgba(104,232,255,.4);
+
+    background:
+        rgba(104,232,255,.055);
+
+    color:var(--cyan);
+
+    border-radius:4px;
+
+    font-size:8px;
+
+    font-weight:600;
+
+    letter-spacing:2px;
+
+    transition:.25s;
+}
+
+.launch:hover{
+    background:
+        rgba(104,232,255,.12);
+
+    box-shadow:
+        0 0 35px
+        rgba(104,232,255,.08);
+
+    transform:
+        translateY(-2px);
+}
+
+.boot-status{
+    margin-top:15px;
+
+    color:#3f4852;
+
+    font-size:7px;
+
+    letter-spacing:1px;
+}
+
+/* =========================================================
+   LOADER
+========================================================= */
+
+.loading{
+    position:absolute;
+
+    inset:0;
+
+    z-index:90;
+
+    display:none;
+
+    align-items:center;
+
+    justify-content:center;
+
+    background:
+        rgba(2,4,6,.76);
+
+    backdrop-filter:
+        blur(8px);
+}
+
+.loading.show{
+    display:flex;
+}
+
+.loading-box{
+    width:270px;
+
+    text-align:center;
+}
+
+.loader-ring{
+    width:45px;
+    height:45px;
+
+    margin:
+        0 auto 16px;
+
+    border:
+        1px solid
+        rgba(104,232,255,.16);
+
+    border-top-color:
+        var(--cyan);
+
+    border-radius:50%;
+
+    animation:
+        spin .8s linear infinite;
+}
+
+@keyframes spin{
+    to{
+        transform:rotate(360deg);
+    }
+}
+
+.loading-text{
+    color:#aab4bd;
+
+    font-size:9px;
+
+    letter-spacing:1px;
+}
+
+.loading-progress{
+    height:2px;
+
+    margin-top:12px;
+
+    background:
+        rgba(255,255,255,.06);
+
+    overflow:hidden;
+}
+
+.loading-progress span{
+    display:block;
+
+    height:100%;
+
+    width:0%;
+
+    background:
+        var(--cyan);
+
+    box-shadow:
+        0 0 12px
+        var(--cyan);
+
+    transition:
+        width .35s ease;
+}
+
+/* =========================================================
+   ERROR
+========================================================= */
+
+.error{
+    position:absolute;
+
+    z-index:110;
+
+    left:50%;
+    top:50%;
+
+    transform:
+        translate(-50%,-50%);
+
+    width:min(390px,90vw);
+
+    padding:24px;
+
+    display:none;
+
+    background:
+        #0a0e13;
+
+    border:
+        1px solid
+        rgba(255,96,123,.28);
+
+    border-radius:6px;
+
+    text-align:center;
+}
+
+.error.show{
+    display:block;
+
+    animation:
+        errorIn .25s ease;
+}
+
+@keyframes errorIn{
+    from{
+        opacity:0;
+        transform:
+            translate(-50%,-46%);
+    }
+
+    to{
+        opacity:1;
+        transform:
+            translate(-50%,-50%);
+    }
+}
+
+.error h3{
+    color:var(--red);
+
+    font-size:11px;
+
+    letter-spacing:2px;
+}
+
+.error p{
+    margin:
+        11px 0 18px;
+
+    color:#727d88;
+
+    font-size:9px;
+
+    line-height:1.7;
+}
+
+/* =========================================================
+   SETTINGS DRAWER
+========================================================= */
+
+.settings{
+    position:absolute;
+
+    right:22px;
+    top:90px;
+
+    z-index:80;
+
+    width:280px;
+
+    padding:16px;
+
+    background:
+        rgba(8,12,16,.96);
+
+    border:
+        1px solid
+        var(--line);
+
+    border-radius:6px;
+
+    backdrop-filter:
+        blur(20px);
+
+    transform:
+        translateX(320px);
+
+    opacity:0;
+
+    pointer-events:none;
+
+    transition:
+        transform .35s ease,
+        opacity .35s ease;
+}
+
+.settings.open{
+    transform:
+        translateX(0);
+
+    opacity:1;
+
+    pointer-events:auto;
+}
+
+.settings h3{
+    font-size:9px;
+
+    letter-spacing:2px;
+
+    margin-bottom:18px;
+}
+
+.setting{
+    margin-bottom:18px;
+}
+
+.setting-head{
+    display:flex;
+
+    justify-content:space-between;
+
+    margin-bottom:8px;
+}
+
+.setting label{
+    color:#7d8791;
+
+    font-size:8px;
+}
+
+.setting-value{
+    color:var(--cyan);
+
+    font-size:8px;
+}
+
+input[type=range]{
+    width:100%;
+
+    accent-color:
+        var(--cyan);
+}
+
+select{
+    width:100%;
+
+    padding:8px;
+
+    color:#9da7b1;
+
+    background:#0b1015;
+
+    border:
+        1px solid
+        var(--line);
+
+    border-radius:4px;
+
+    font-size:8px;
+}
+
+/* =========================================================
+   MOBILE
+========================================================= */
+
+@media(max-width:850px){
+
+    .top-right .readout{
+        display:none;
+    }
+
+    .intelligence{
+        width:250px;
+    }
+
+    .corner.tr,
+    .corner.br{
+        right:296px;
+    }
+
+}
+
+@media(max-width:650px){
+
+    html,
+    body{
+        overflow:hidden;
+    }
+
+    .topbar{
+        height:65px;
+
+        padding:
+            12px 13px;
+    }
+
+    .brand-title{
+        font-size:9px;
+
+        letter-spacing:3px;
+    }
+
+    .brand-sub{
+        font-size:6px;
+    }
+
+    .brand-orbit{
+        width:31px;
+        height:31px;
+    }
+
+    .left-hud{
+        top:82px;
+        left:13px;
+        width:105px;
+    }
+
+    .hud-block{
+        margin-bottom:13px;
+    }
+
+    .hud-value{
+        font-size:17px;
+    }
+
+    .intelligence{
+        left:13px;
+        right:13px;
+
+        top:auto;
+        bottom:66px;
+
+        width:auto;
+
+        height:170px;
+    }
+
+    .object-list{
+        max-height:120px;
+    }
+
+    .radar-panel{
+        display:none;
+    }
+
+    .corner{
+        display:none;
+    }
+
+    .bottom{
+        left:13px;
+        right:13px;
+        bottom:9px;
+    }
+
+    .event{
+        max-width:40%;
+    }
+
+    .event-time{
+        display:none;
+    }
+
+    .btn{
+        padding:
+            0 8px;
+
+        font-size:6px;
+    }
+
+    .boot h1{
+        font-size:21px;
+        letter-spacing:5px;
+    }
+
+    .boot h2{
+        font-size:7px;
+        letter-spacing:3px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div id="app">
+
+    <!-- CAMERA -->
+    <video
+        id="video"
+        autoplay
+        muted
+        playsinline>
+    </video>
+
+    <!-- AI DRAWING LAYER -->
+    <canvas id="overlay"></canvas>
+
+    <div class="grid"></div>
+    <div class="cinema"></div>
+    <div class="scanner"></div>
+
+    <!-- CAMERA CORNERS -->
+    <div class="corner tl"></div>
+    <div class="corner tr"></div>
+    <div class="corner bl"></div>
+    <div class="corner br"></div>
+
+    <!-- TOP -->
+    <header class="topbar">
+
+        <div class="brand">
+
+            <div class="brand-orbit"></div>
+
+            <div>
+                <div class="brand-title">
+                    VISION // X
+                </div>
+
+                <div class="brand-sub">
+                    PERCEPTION & TRACKING ENGINE
+                </div>
+            </div>
+
+        </div>
+
+        <div class="top-right">
+
+            <div class="readout">
+                MODEL
+                <b id="modelReadout">STANDBY</b>
+            </div>
+
+            <div class="readout">
+                FPS
+                <b id="fpsReadout">--</b>
+            </div>
+
+            <div class="readout">
+                LATENCY
+                <b id="latencyReadout">--</b>
+            </div>
+
+            <div class="live">
+                <span class="live-dot"></span>
+                <span id="liveState">OFFLINE</span>
+            </div>
+
+        </div>
+
+    </header>
+
+    <!-- LEFT TELEMETRY -->
+    <aside class="left-hud">
+
+        <div class="hud-block">
+
+            <div class="hud-label">
+                HUMAN PRESENCE
+            </div>
+
+            <div class="hud-value"
+                 id="peopleCount">
+                00
+            </div>
+
+            <div class="hud-line"></div>
+
+        </div>
+
+        <div class="hud-block">
+
+            <div class="hud-label">
+                VEHICLE PRESENCE
+            </div>
+
+            <div class="hud-value"
+                 id="vehicleCount">
+                00
+            </div>
+
+            <div class="hud-line"></div>
+
+        </div>
+
+        <div class="hud-block">
+
+            <div class="hud-label">
+                ACTIVE MOTION
+            </div>
+
+            <div class="hud-value"
+                 id="motionCount">
+                00
+            </div>
+
+            <div class="hud-line"></div>
+
+        </div>
+
+        <div class="hud-block">
+
+            <div class="hud-label">
+                FLOW VECTOR
+            </div>
+
+            <div class="vector">
+
+                <span
+                    class="vector-arrow"
+                    id="directionArrow">
+                    →
+                </span>
+
+                <span id="directionText">
+                    NO DATA
+                </span>
+
+            </div>
+
+        </div>
+
+    </aside>
+
+    <!-- RIGHT INTELLIGENCE -->
+    <aside class="intelligence">
+
+        <section class="panel">
+
+            <div class="panel-header">
+
+                <div class="panel-title">
+                    OBJECT INTELLIGENCE
+                </div>
+
+                <div
+                    class="panel-count"
+                    id="trackedCount">
+                    00 TRACKED
+                </div>
+
+            </div>
+
+            <div
+                class="object-list"
+                id="objectList">
+
+                <div class="empty">
+                    AWAITING VISUAL INPUT
+                </div>
+
+            </div>
+
+        </section>
+
+        <section class="panel radar-panel">
+
+            <div class="radar-title">
+
+                <span>
+                    SPATIAL ACTIVITY
+                </span>
+
+                <span id="radarStatus">
+                    SCANNING
+                </span>
+
+            </div>
+
+            <div class="radar"
+                 id="radar">
+
+                <div class="sweep"></div>
+                <div class="radar-center"></div>
+
+            </div>
+
+        </section>
+
+    </aside>
+
+    <!-- BOTTOM -->
+    <footer class="bottom">
+
+        <div class="event">
+
+            <span class="event-dot"></span>
+
+            <span
+                class="event-message"
+                id="eventMessage">
+                System ready
+            </span>
+
+            <span
+                class="event-time"
+                id="eventTime">
+                --
+            </span>
+
+        </div>
+
+        <div class="controls">
+
+            <button
+                class="btn"
+                onclick="takeSnapshot()">
+                SNAPSHOT
+            </button>
+
+            <button
+                class="btn"
+                onclick="toggleFullscreen()">
+                FULLSCREEN
+            </button>
+
+            <button
+                class="btn"
+                onclick="toggleSettings()">
+                SETTINGS
+            </button>
+
+            <button
+                class="btn primary"
+                id="mainButton"
+                onclick="toggleSystem()">
+                INITIALIZE
+            </button>
+
+        </div>
+
+    </footer>
+
+    <!-- SETTINGS -->
+    <aside
+        class="settings"
+        id="settings">
+
+        <h3>
+            VISION PARAMETERS
+        </h3>
+
+        <div class="setting">
+
+            <div class="setting-head">
+
+                <label>
+                    CONFIDENCE THRESHOLD
+                </label>
+
+                <span
+                    class="setting-value"
+                    id="confidenceValue">
+                    48%
+                </span>
+
+            </div>
+
+            <input
+                id="confidenceSlider"
+                type="range"
+                min="30"
+                max="80"
+                value="48">
+
+        </div>
+
+        <div class="setting">
+
+            <div class="setting-head">
+                <label>
+                    TRACKING SENSITIVITY
+                </label>
+
+                <span
+                    class="setting-value"
+                    id="sensitivityValue">
+                    NORMAL
+                </span>
+            </div>
+
+            <input
+                id="sensitivitySlider"
+                type="range"
+                min="1"
+                max="3"
+                value="2">
+        </div>
+
+        <div class="setting">
+
+            <div class="setting-head">
+                <label>
+                    CAMERA
+                </label>
+            </div>
+
+            <select id="cameraSelect">
+                <option>
+                    Default camera
+                </option>
+            </select>
+
+        </div>
+
+        <button
+            class="btn"
+            style="width:100%"
+            onclick="resetSettings()">
+            RESET PARAMETERS
+        </button>
+
+    </aside>
+
+    <!-- BOOT -->
+    <section
+        class="boot"
+        id="boot">
+
+        <div class="boot-content">
+
+            <div class="core"></div>
+
+            <h1>
+                VISION // X
+            </h1>
+
+            <h2>
+                REAL-TIME PERCEPTION ENGINE
+            </h2>
+
+            <p class="boot-description">
+                A browser-based visual intelligence console
+                for people, vehicles, movement and spatial
+                tracking.
+            </p>
+
+            <button
+                class="launch"
+                onclick="startSystem()">
+                INITIALIZE VISION CORE
+            </button>
+
+            <div class="boot-status">
+                CAMERA ACCESS REQUIRED
+            </div>
+
+        </div>
+
+    </section>
+
+    <!-- LOADING -->
+    <section
+        class="loading"
+        id="loading">
+
+        <div class="loading-box">
+
+            <div class="loader-ring"></div>
+
+            <div
+                class="loading-text"
+                id="loadingText">
+                INITIALIZING
+            </div>
+
+            <div class="loading-progress">
+                <span id="loadingProgress"></span>
+            </div>
+
+        </div>
+
+    </section>
+
+    <!-- ERROR -->
+    <section
+        class="error"
+        id="errorBox">
+
+        <h3>
+            VISION CORE ERROR
+        </h3>
+
+        <p id="errorText">
+            Unable to initialize.
+        </p>
+
+        <button
+            class="btn primary"
+            onclick="hideError()">
+            DISMISS
+        </button>
+
+    </section>
+
+</div>
+
+<script>
+
+/* =========================================================
+   VISION-X ENGINE
+========================================================= */
+
+const video =
+    document.getElementById("video");
+
+const canvas =
+    document.getElementById("overlay");
+
+const ctx =
+    canvas.getContext("2d");
+
+let model = null;
+let stream = null;
+
+let running = false;
+let paused = false;
+let inferenceBusy = false;
+
+let tracks = new Map();
+
+let nextID = 1;
+
+let confidenceThreshold =
+    0.48;
+
+let sensitivity = 2;
+
+let fps = 0;
+let frameCounter = 0;
+let fpsTimer = performance.now();
+
+let totalSeen = 0;
+
+let lastEvent = "";
+
+const VEHICLES = new Set([
+    "car",
+    "truck",
+    "bus",
+    "motorcycle",
+    "bicycle"
+]);
+
+const TRACK_COLORS = [
+    "#68e8ff",
+    "#6ff5ae",
+    "#ffc66b",
+    "#ff607b",
+    "#a98cff",
+    "#ff8fd8"
+];
+
+/* =========================================================
+   HELPERS
+========================================================= */
+
+function $(id){
+    return document.getElementById(id);
+}
+
+function pretty(name){
+
+    return name.charAt(0).toUpperCase() +
+           name.slice(1);
+
+}
+
+function distance(a,b){
+
+    return Math.sqrt(
+        Math.pow(a.x-b.x,2) +
+        Math.pow(a.y-b.y,2)
+    );
+
+}
+
+function currentTime(){
+
+    return new Date()
+        .toLocaleTimeString([],{
+            hour:"2-digit",
+            minute:"2-digit",
+            second:"2-digit"
+        });
+
+}
+
+/* =========================================================
+   EVENT SYSTEM
+========================================================= */
+
+function event(message){
+
+    if(message === lastEvent)
+        return;
+
+    lastEvent = message;
+
+    $("eventMessage").textContent =
+        message;
+
+    $("eventTime").textContent =
+        currentTime();
+
+}
+
+/* =========================================================
+   ERROR SYSTEM
+========================================================= */
+
+function showError(message){
+
+    $("errorText").textContent =
+        message;
+
+    $("errorBox")
+        .classList
+        .add("show");
+
+}
+
+function hideError(){
+
+    $("errorBox")
+        .classList
+        .remove("show");
+
+}
+
+/* =========================================================
+   LOADING
+========================================================= */
+
+function loading(text,progress){
+
+    $("loadingText").textContent =
+        text;
+
+    $("loadingProgress")
+        .style
+        .width =
+        progress+"%";
+
+}
+
+/* =========================================================
+   CAMERA
+========================================================= */
+
+async function requestCamera(deviceId=null){
+
+    const constraints = {
+
+        video:{
+
+            width:{
+                ideal:1280
+            },
+
+            height:{
+                ideal:720
+            },
+
+            frameRate:{
+                ideal:30,
+                max:30
+            }
+
+        },
+
+        audio:false
+
+    };
+
+    if(deviceId){
+
+        constraints.video.deviceId={
+            exact:deviceId
+        };
+
+    }
+
+    return navigator
+        .mediaDevices
+        .getUserMedia(
+            constraints
+        );
+
+}
+
+async function startCamera(){
+
+    if(
+        !navigator.mediaDevices ||
+        !navigator.mediaDevices.getUserMedia
+    ){
+
+        throw new Error(
+            "This browser does not support webcam access."
+        );
+
+    }
+
+    stream =
+        await requestCamera();
+
+    video.srcObject =
+        stream;
+
+    await video.play();
+
+    resizeCanvas();
+
+    await loadCameras();
+
+}
+
+async function loadCameras(){
+
+    try{
+
+        const devices =
+            await navigator
+                .mediaDevices
+                .enumerateDevices();
+
+        const cameras =
+            devices.filter(
+                d =>
+                    d.kind ===
+                    "videoinput"
+            );
+
+        const select =
+            $("cameraSelect");
+
+        select.innerHTML="";
+
+        cameras.forEach(
+            (camera,index)=>{
+
+                const option =
+                    document
+                        .createElement(
+                            "option"
+                        );
+
+                option.value =
+                    camera.deviceId;
+
+                option.textContent =
+                    camera.label ||
+                    `Camera ${index+1}`;
+
+                select.appendChild(
+                    option
+                );
+
+            }
+        );
+
+    }catch(error){
+
+        console.warn(
+            "Camera enumeration failed",
+            error
+        );
+
+    }
+
+}
+
+async function switchCamera(){
+
+    const deviceId =
+        $("cameraSelect").value;
+
+    if(!deviceId ||
+       deviceId === "Default camera"){
+
+        event(
+            "Default camera selected"
+        );
+
+        return;
+
+    }
+
+    try{
+
+        if(stream){
+
+            stream
+                .getTracks()
+                .forEach(
+                    track =>
+                        track.stop()
+                );
+
+        }
+
+        stream =
+            await requestCamera(
+                deviceId
+            );
+
+        video.srcObject =
+            stream;
+
+        await video.play();
+
+        resizeCanvas();
+
+        event(
+            "Camera source switched"
+        );
+
+    }catch(error){
+
+        showError(
+            "Unable to switch to the selected camera."
+        );
+
+    }
+
+}
+
+/* =========================================================
+   MODEL
+========================================================= */
+
+async function loadModel(){
+
+    loading(
+        "LOADING PERCEPTION MODEL",
+        35
+    );
+
+    model =
+        await cocoSsd.load({
+            base:
+                "lite_mobilenet_v2"
+        });
+
+    loading(
+        "PERCEPTION MODEL READY",
+        100
+    );
+
+}
+
+/* =========================================================
+   START
+========================================================= */
+
+async function startSystem(){
+
+    hideError();
+
+    $("loading")
+        .classList
+        .add("show");
+
+    try{
+
+        loading(
+            "REQUESTING CAMERA",
+            10
+        );
+
+        await startCamera();
+
+        loading(
+            "CAMERA ONLINE",
+            25
+        );
+
+        if(!model){
+
+            await loadModel();
+
+        }
+
+        loading(
+            "STARTING TRACKING CORE",
+            90
+        );
+
+        await new Promise(
+            resolve =>
+                setTimeout(
+                    resolve,
+                    350
+                )
+        );
+
+        running=true;
+        paused=false;
+
+        $("loading")
+            .classList
+            .remove("show");
+
+        $("boot")
+            .classList
+            .add("hide");
+
+        $("mainButton")
+            .textContent =
+            "SHUTDOWN";
+
+        $("modelReadout")
+            .textContent =
+            "COCO-SSD";
+
+        $("liveState")
+            .textContent =
+            "LIVE";
+
+        event(
+            "Vision core initialized"
+        );
+
+        detectLoop();
+
+    }catch(error){
+
+        console.error(error);
+
+        $("loading")
+            .classList
+            .remove("show");
+
+        $("modelReadout")
+            .textContent =
+            "ERROR";
+
+        $("liveState")
+            .textContent =
+            "ERROR";
+
+        showError(
+            error.message ||
+            "Unable to initialize the vision system."
+        );
+
+    }
+
+}
+
+/* =========================================================
+   STOP
+========================================================= */
+
+function stopSystem(){
+
+    running=false;
+
+    paused=false;
+
+    if(stream){
+
+        stream
+            .getTracks()
+            .forEach(
+                track =>
+                    track.stop()
+            );
+
+    }
+
+    stream=null;
+
+    video.srcObject=null;
+
+    tracks.clear();
+
+    ctx.clearRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+
+    $("boot")
+        .classList
+        .remove("hide");
+
+    $("mainButton")
+        .textContent =
+        "INITIALIZE";
+
+    $("modelReadout")
+        .textContent =
+        "STANDBY";
+
+    $("liveState")
+        .textContent =
+        "OFFLINE";
+
+    resetLiveNumbers();
+
+    event(
+        "Vision core shutdown"
+    );
+
+}
+
+function toggleSystem(){
+
+    if(running){
+
+        stopSystem();
+
+    }else{
+
+        startSystem();
+
+    }
+
+}
+
+/* =========================================================
+   PAUSE
+========================================================= */
+
+function togglePause(){
+
+    if(!running)
+        return;
+
+    paused=!paused;
+
+    video.classList.toggle(
+        "paused",
+        paused
+    );
+
+    if(paused){
+
+        event(
+            "Analysis paused"
+        );
+
+    }else{
+
+        event(
+            "Analysis resumed"
+        );
+
+    }
+
+}
+
+/* =========================================================
+   CANVAS
+========================================================= */
+
+function resizeCanvas(){
+
+    if(!video.videoWidth)
+        return;
+
+    canvas.width =
+        video.videoWidth;
+
+    canvas.height =
+        video.videoHeight;
+
+}
+
+window.addEventListener(
+    "resize",
+    resizeCanvas
+);
+
+/* =========================================================
+   TRACK CREATION
+========================================================= */
+
+function createTrack(prediction){
+
+    const [
+        x,
+        y,
+        w,
+        h
+    ] = prediction.bbox;
+
+    const center={
+        x:x+w/2,
+        y:y+h/2
+    };
+
+    const track={
+
+        id:nextID++,
+
+        className:
+            prediction.class,
+
+        bbox:
+            [...prediction.bbox],
+
+        center,
+
+        previous:
+            {...center},
+
+        score:
+            prediction.score,
+
+        color:
+            TRACK_COLORS[
+                (nextID-2) %
+                TRACK_COLORS.length
+            ],
+
+        missing:0,
+
+        history:[
+            center
+        ],
+
+        lastSeen:
+            Date.now()
+
+    };
+
+    tracks.set(
+        track.id,
+        track
+    );
+
+    totalSeen++;
+
+    event(
+        `${pretty(prediction.class)} detected — ID ${track.id}`
+    );
+
+    return track;
+
+}
+
+/* =========================================================
+   FIND TRACK
+========================================================= */
+
+function findTrack(prediction){
+
+    const [
+        x,
+        y,
+        w,
+        h
+    ] = prediction.bbox;
+
+    const center={
+        x:x+w/2,
+        y:y+h/2
+    };
+
+    let best=null;
+
+    let bestDistance=
+        Infinity;
+
+    for(
+        const track
+        of tracks.values()
+    ){
+
+        if(track.missing>3)
+            continue;
+
+        if(
+            track.className !==
+            prediction.class
+        )
+            continue;
+
+        const d =
+            distance(
+                center,
+                track.center
+            );
+
+        const threshold =
+            45 +
+            sensitivity*35 +
+            Math.min(
+                100,
+                Math.max(w,h)*.35
+            );
+
+        if(
+            d < threshold &&
+            d < bestDistance
+        ){
+
+            bestDistance=d;
+            best=track;
+
+        }
+
+    }
+
+    return best;
+
+}
+
+/* =========================================================
+   UPDATE TRACK
+========================================================= */
+
+function updateTrack(
+    track,
+    prediction
+){
+
+    const [
+        x,
+        y,
+        w,
+        h
+    ] = prediction.bbox;
+
+    track.previous =
+        {...track.center};
+
+    track.center={
+
+        x:x+w/2,
+
+        y:y+h/2
+
+    };
+
+    track.bbox =
+        [...prediction.bbox];
+
+    track.score =
+        prediction.score;
+
+    track.missing=0;
+
+    track.lastSeen =
+        Date.now();
+
+    track.history.push(
+        {...track.center}
+    );
+
+    if(
+        track.history.length>25
+    ){
+
+        track.history.shift();
+
+    }
+
+}
+
+/* =========================================================
+   MOTION
+========================================================= */
+
+function speed(track){
+
+    return distance(
+        track.center,
+        track.previous
+    );
+
+}
+
+function getState(track){
+
+    const movement =
+        speed(track);
+
+    if(movement < 2)
+        return "STATIONARY";
+
+    if(
+        track.className ===
+        "person"
+    ){
+
+        if(movement>17)
+            return "RUNNING";
+
+        return "WALKING";
+
+    }
+
+    if(movement>18)
+        return "FAST";
+
+    return "MOVING";
+
+}
+
+function getDirection(track){
+
+    const dx =
+        track.center.x -
+        track.previous.x;
+
+    if(Math.abs(dx)<2)
+        return "STABLE";
+
+    return dx>0
+        ? "RIGHT"
+        : "LEFT";
+
+}
+
+/* =========================================================
+   DETECTION
+========================================================= */
+
+async function detectLoop(){
+
+    if(
+        !running ||
+        !model
+    )
+        return;
+
+    if(
+        paused ||
+        inferenceBusy
+    ){
+
+        requestAnimationFrame(
+            detectLoop
+        );
+
+        return;
+
+    }
+
+    inferenceBusy=true;
+
+    const start =
+        performance.now();
+
+    try{
+
+        const predictions =
+            await model.detect(
+                video,
+                20,
+                confidenceThreshold
+            );
+
+        const latency =
+            Math.round(
+                performance.now() -
+                start
+            );
+
+        $("latencyReadout")
+            .textContent =
+            latency+"ms";
+
+        processPredictions(
+            predictions
+        );
+
+    }catch(error){
+
+        console.error(
+            "Detection error:",
+            error
+        );
+
+    }
+
+    inferenceBusy=false;
+
+    if(running){
+
+        requestAnimationFrame(
+            detectLoop
+        );
+
+    }
+
+}
+
+/* =========================================================
+   PROCESS
+========================================================= */
+
+function processPredictions(
+    predictions
+){
+
+    const valid =
+        predictions.filter(
+            p =>
+                p.score >=
+                confidenceThreshold
+                &&
+                (
+                    p.class ===
+                    "person"
+                    ||
+                    VEHICLES.has(
+                        p.class
+                    )
+                )
+        );
+
+    const matched =
+        new Set();
+
+    for(
+        const prediction
+        of valid
+    ){
+
+        let track =
+            findTrack(
+                prediction
+            );
+
+        if(!track){
+
+            track =
+                createTrack(
+                    prediction
+                );
+
+        }else{
+
+            updateTrack(
+                track,
+                prediction
+            );
+
+        }
+
+        matched.add(
+            track.id
+        );
+
+    }
+
+    for(
+        const track
+        of tracks.values()
+    ){
+
+        if(
+            !matched.has(
+                track.id
+            )
+        ){
+
+            track.missing++;
+
+        }
+
+    }
+
+    for(
+        const [
+            id,
+            track
+        ]
+        of tracks
+    ){
+
+        if(
+            track.missing>12
+        ){
+
+            tracks.delete(id);
+
+        }
+
+    }
+
+    drawScene();
+
+    updateUI(
+        valid
+    );
+
+    updateFPS();
+
+}
+
+/* =========================================================
+   DRAW SCENE
+========================================================= */
+
+function drawScene(){
+
+    if(
+        !canvas.width ||
+        !video.videoWidth
+    )
+        return;
+
+    ctx.clearRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+
+    const sx =
+        canvas.width /
+        video.videoWidth;
+
+    const sy =
+        canvas.height /
+        video.videoHeight;
+
+    for(
+        const track
+        of tracks.values()
+    ){
+
+        if(track.missing>0)
+            continue;
+
+        const [
+            x,
+            y,
+            w,
+            h
+        ] = track.bbox;
+
+        const px=x*sx;
+        const py=y*sy;
+        const pw=w*sx;
+        const ph=h*sy;
+
+        const color =
+            track.color;
+
+        /* trajectory */
+
+        if(
+            track.history.length>1
+        ){
+
+            ctx.beginPath();
+
+            track.history.forEach(
+                (point,index)=>{
+
+                    const hx =
+                        point.x*sx;
+
+                    const hy =
+                        point.y*sy;
+
+                    if(index===0){
+
+                        ctx.moveTo(
+                            hx,
+                            hy
+                        );
+
+                    }else{
+
+                        ctx.lineTo(
+                            hx,
+                            hy
+                        );
+
+                    }
+
+                }
+            );
+
+            ctx.strokeStyle =
+                color;
+
+            ctx.globalAlpha=.25;
+
+            ctx.lineWidth=1.5;
+
+            ctx.stroke();
+
+            ctx.globalAlpha=1;
+
+        }
+
+        /* bounding box */
+
+        ctx.strokeStyle =
+            color;
+
+        ctx.lineWidth=1.5;
+
+        ctx.strokeRect(
+            px,
+            py,
+            pw,
+            ph
+        );
+
+        /* corners */
+
+        const corner=10;
+
+        ctx.beginPath();
+
+        ctx.moveTo(
+            px,
+            py+corner
+        );
+
+        ctx.lineTo(
+            px,
+            py
+        );
+
+        ctx.lineTo(
+            px+corner,
+            py
+        );
+
+        ctx.moveTo(
+            px+pw-corner,
+            py
+        );
+
+        ctx.lineTo(
+            px+pw,
+            py
+        );
+
+        ctx.lineTo(
+            px+pw,
+            py+corner
+        );
+
+        ctx.moveTo(
+            px,
+            py+ph-corner
+        );
+
+        ctx.lineTo(
+            px,
+            py+ph
+        );
+
+        ctx.lineTo(
+            px+corner,
+            py+ph
+        );
+
+        ctx.moveTo(
+            px+pw-corner,
+            py+ph
+        );
+
+        ctx.lineTo(
+            px+pw,
+            py+ph
+        );
+
+        ctx.lineTo(
+            px+pw,
+            py+ph-corner
+        );
+
+        ctx.stroke();
+
+        /* label */
+
+        const label =
+            `${pretty(track.className)} #${String(track.id).padStart(2,"0")}`;
+
+        const state =
+            getState(track);
+
+        const sub =
+            `${Math.round(track.score*100)}% • ${state}`;
+
+        ctx.font =
+            "600 10px Arial";
+
+        const labelWidth =
+            Math.max(
+                110,
+                ctx.measureText(
+                    label
+                ).width
+            )+12;
+
+        const labelY =
+            Math.max(
+                0,
+                py-30
+            );
+
+        ctx.fillStyle =
+            "rgba(3,7,9,.9)";
+
+        ctx.fillRect(
+            px,
+            labelY,
+            labelWidth,
+            28
+        );
+
+        ctx.fillStyle =
+            color;
+
+        ctx.font =
+            "600 10px Arial";
+
+        ctx.fillText(
+            label,
+            px+6,
+            labelY+11
+        );
+
+        ctx.fillStyle =
+            "#aeb8c2";
+
+        ctx.font =
+            "8px Arial";
+
+        ctx.fillText(
+            sub,
+            px+6,
+            labelY+22
+        );
+
+    }
+
+}
+
+/* =========================================================
+   UPDATE UI
+========================================================= */
+
+function updateUI(){
+
+    const active =
+        [...tracks.values()]
+        .filter(
+            t =>
+                t.missing===0
+        );
+
+    const people =
+        active.filter(
+            t =>
+                t.className===
+                "person"
+        );
+
+    const vehicles =
+        active.filter(
+            t =>
+                VEHICLES.has(
+                    t.className
+                )
+        );
+
+    const moving =
+        active.filter(
+            t =>
+                getState(t)!==
+                "STATIONARY"
+        );
+
+    $("peopleCount")
+        .textContent =
+        String(
+            people.length
+        ).padStart(2,"0");
+
+    $("vehicleCount")
+        .textContent =
+        String(
+            vehicles.length
+        ).padStart(2,"0");
+
+    $("motionCount")
+        .textContent =
+        String(
+            moving.length
+        ).padStart(2,"0");
+
+    $("trackedCount")
+        .textContent =
+        String(
+            active.length
+        ).padStart(2,"0")+
+        " TRACKED";
+
+    updateDirection(
+        active
+    );
+
+    renderObjects(
+        active
+    );
+
+    renderRadar(
+        active
+    );
+
+}
+
+/* =========================================================
+   OBJECT PANEL
+========================================================= */
+
+function renderObjects(
+    active
+){
+
+    const container =
+        $("objectList");
+
+    if(!active.length){
+
+        container.innerHTML=`
+            <div class="empty">
+                NO ACTIVE OBJECTS
+            </div>
+        `;
+
+        return;
+
+    }
+
+    container.innerHTML="";
+
+    active
+        .sort(
+            (a,b)=>
+                a.id-b.id
+        )
+        .slice(0,15)
+        .forEach(
+            track=>{
+
+                const state =
+                    getState(track);
+
+                const dir =
+                    getDirection(track);
+
+                const item =
+                    document
+                        .createElement(
+                            "div"
+                        );
+
+                item.className =
+                    "object";
+
+                item.innerHTML=`
+
+                    <div
+                        class="object-symbol"
+                        style="
+                            color:${track.color};
+                            border-color:${track.color}44;
+                        "
+                    >
+                        ${
+                            track.className===
+                            "person"
+                            ? "P"
+                            : "V"
+                        }
+                    </div>
+
+                    <div>
+
+                        <div class="object-name">
+                            ${pretty(track.className)}
+                        </div>
+
+                        <div class="object-info">
+                            ${dir}
+                            &nbsp; • &nbsp;
+                            ${Math.round(track.score*100)}%
+                        </div>
+
+                        <span
+                            class="
+                                object-state
+                                ${
+                                    state===
+                                    "STATIONARY"
+                                    ? "state-still"
+                                    : "state-moving"
+                                }
+                            "
+                        >
+                            ${state}
+                        </span>
+
+                    </div>
+
+                    <div class="object-id">
+                        ID-${String(track.id).padStart(3,"0")}
+                    </div>
+
+                `;
+
+                container.appendChild(
+                    item
+                );
+
+            }
+        );
+
+}
+
+/* =========================================================
+   DIRECTION
+========================================================= */
+
+function updateDirection(
+    active
+){
+
+    if(!active.length){
+
+        $("directionArrow")
+            .textContent="→";
+
+        $("directionText")
+            .textContent="NO DATA";
+
+        return;
+
+    }
+
+    let left=0;
+    let right=0;
+
+    active.forEach(
+        track=>{
+
+            const d =
+                getDirection(track);
+
+            if(d==="LEFT")
+                left++;
+
+            if(d==="RIGHT")
+                right++;
+
+        }
+    );
+
+    if(
+        left>right
+    ){
+
+        $("directionArrow")
+            .textContent="←";
+
+        $("directionText")
+            .textContent=
+            "LEFT FLOW";
+
+    }else if(
+        right>left
+    ){
+
+        $("directionArrow")
+            .textContent="→";
+
+        $("directionText")
+            .textContent=
+            "RIGHT FLOW";
+
+    }else{
+
+        $("directionArrow")
+            .textContent="↔";
+
+        $("directionText")
+            .textContent=
+            "MIXED FLOW";
+
+    }
+
+}
+
+/* =========================================================
+   RADAR
+========================================================= */
+
+function renderRadar(
+    active
+){
+
+    const radar =
+        $("radar");
+
+    radar
+        .querySelectorAll(
+            ".radar-dot"
+        )
+        .forEach(
+            dot =>
+                dot.remove()
+        );
+
+    const width =
+        radar.clientWidth;
+
+    const height =
+        radar.clientHeight;
+
+    active
+        .slice(0,15)
+        .forEach(
+            track=>{
+
+                const [
+                    x,
+                    y,
+                    w,
+                    h
+                ] = track.bbox;
+
+                let rx =
+                    (
+                        x+w/2
+                    ) /
+                    video.videoWidth;
+
+                let ry =
+                    (
+                        y+h/2
+                    ) /
+                    video.videoHeight;
+
+                rx =
+                    Math.max(
+                        .08,
+                        Math.min(
+                            .92,
+                            rx
+                        )
+                    );
+
+                ry =
+                    Math.max(
+                        .08,
+                        Math.min(
+                            .92,
+                            ry
+                        )
+                    );
+
+                const dot =
+                    document
+                        .createElement(
+                            "span"
+                        );
+
+                dot.className =
+                    "radar-dot";
+
+                dot.style.left =
+                    (
+                        rx*100
+                    )+"%";
+
+                dot.style.top =
+                    (
+                        ry*100
+                    )+"%";
+
+                dot.style.background =
+                    track.color;
+
+                dot.style.boxShadow =
+                    `0 0 9px ${track.color}`;
+
+                radar.appendChild(
+                    dot
+                );
+
+            }
+        );
+
+}
+
+/* =========================================================
+   FPS
+========================================================= */
+
+function updateFPS(){
+
+    frameCounter++;
+
+    const now =
+        performance.now();
+
+    if(
+        now-fpsTimer >=
+        1000
+    ){
+
+        fps =
+            frameCounter;
+
+        frameCounter=0;
+
+        fpsTimer=now;
+
+        $("fpsReadout")
+            .textContent =
+            fps;
+
+    }
+
+}
+
+/* =========================================================
+   SNAPSHOT
+========================================================= */
+
+function takeSnapshot(){
+
+    if(
+        !video.videoWidth
+    ){
+
+        event(
+            "Snapshot unavailable"
+        );
+
+        return;
+
+    }
+
+    const output =
+        document.createElement(
+            "canvas"
+        );
+
+    output.width =
+        video.videoWidth;
+
+    output.height =
+        video.videoHeight;
+
+    const out =
+        output.getContext(
+            "2d"
+        );
+
+    out.drawImage(
+        video,
+        0,
+        0,
+        output.width,
+        output.height
+    );
+
+    out.drawImage(
+        canvas,
+        0,
+        0,
+        output.width,
+        output.height
+    );
+
+    const link =
+        document.createElement(
+            "a"
+        );
+
+    link.download =
+        `vision-x-${Date.now()}.png`;
+
+    link.href =
+        output.toDataURL(
+            "image/png"
+        );
+
+    link.click();
+
+    event(
+        "Visual snapshot captured"
+    );
+
+}
+
+/* =========================================================
+   FULLSCREEN
+========================================================= */
+
+function toggleFullscreen(){
+
+    if(
+        !document.fullscreenElement
+    ){
+
+        document
+            .getElementById("app")
+            .requestFullscreen?.();
+
+        event(
+            "Fullscreen mode enabled"
+        );
+
+    }else{
+
+        document
+            .exitFullscreen?.();
+
+        event(
+            "Fullscreen mode disabled"
+        );
+
+    }
+
+}
+
+/* =========================================================
+   SETTINGS
+========================================================= */
+
+function toggleSettings(){
+
+    $("settings")
+        .classList
+        .toggle("open");
+
+}
+
+$("confidenceSlider")
+    .addEventListener(
+        "input",
+        function(){
+
+            confidenceThreshold =
+                Number(
+                    this.value
+                )/100;
+
+            $("confidenceValue")
+                .textContent =
+                this.value+"%";
+
+        }
+    );
+
+$("sensitivitySlider")
+    .addEventListener(
+        "input",
+        function(){
+
+            sensitivity =
+                Number(
+                    this.value
+                );
+
+            const names=[
+                "",
+                "LOW",
+                "NORMAL",
+                "HIGH"
+            ];
+
+            $("sensitivityValue")
+                .textContent =
+                names[
+                    sensitivity
+                ];
+
+        }
+    );
+
+$("cameraSelect")
+    .addEventListener(
+        "change",
+        switchCamera
+    );
+
+function resetSettings(){
+
+    confidenceThreshold=.48;
+
+    sensitivity=2;
+
+    $("confidenceSlider")
+        .value=48;
+
+    $("sensitivitySlider")
+        .value=2;
+
+    $("confidenceValue")
+        .textContent="48%";
+
+    $("sensitivityValue")
+        .textContent="NORMAL";
+
+    event(
+        "Vision parameters reset"
+    );
+
+}
+
+/* =========================================================
+   RESET LIVE NUMBERS
+========================================================= */
+
+function resetLiveNumbers(){
+
+    $("peopleCount")
+        .textContent="00";
+
+    $("vehicleCount")
+        .textContent="00";
+
+    $("motionCount")
+        .textContent="00";
+
+    $("trackedCount")
+        .textContent="00 TRACKED";
+
+    $("fpsReadout")
+        .textContent="--";
+
+    $("latencyReadout")
+        .textContent="--";
+
+}
+
+/* =========================================================
+   KEYBOARD
+========================================================= */
+
+document.addEventListener(
+    "keydown",
+    eventKey=>{
+
+        if(
+            eventKey.target.tagName===
+            "INPUT"
+        )
+            return;
+
+        if(
+            eventKey.code===
+            "Space"
+        ){
+
+            eventKey.preventDefault();
+
+            togglePause();
+
+        }
+
+        if(
+            eventKey.key.toLowerCase()==="f"
+        ){
+
+            toggleFullscreen();
+
+        }
+
+        if(
+            eventKey.key.toLowerCase()==="s"
+        ){
+
+            takeSnapshot();
+
+        }
+
+        if(
+            eventKey.key.toLowerCase()==="escape"
+        ){
+
+            $("settings")
+                .classList
+                .remove("open");
+
+        }
+
+    }
+);
+
+/* =========================================================
+   CAMERA RESIZE OBSERVER
+========================================================= */
+
+if(
+    "ResizeObserver" in window
+){
+
+    const observer =
+        new ResizeObserver(
+            resizeCanvas
+        );
+
+    observer.observe(
+        document.getElementById(
+            "app"
+        )
+    );
+
+}
+
+/* =========================================================
+   INITIAL STATE
+========================================================= */
+
+event(
+    "Vision system ready"
+);
+
+</script>
+
+</body>
+</html>
+```
