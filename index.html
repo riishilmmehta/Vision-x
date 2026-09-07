@@ -1,1 +1,2344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>VISION TRACKER X</title>
 
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0"></script>
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/coco-ssd@2.2.3"></script>
+
+<style>
+*{
+    box-sizing:border-box;
+    margin:0;
+    padding:0;
+}
+
+html,body{
+    width:100%;
+    height:100%;
+    overflow:hidden;
+    background:#030607;
+    color:#eafff0;
+    font-family:Inter,Arial,sans-serif;
+}
+
+body{
+    position:relative;
+}
+
+/* ================= BACKGROUND ================= */
+
+body:before{
+    content:"";
+    position:fixed;
+    inset:0;
+    pointer-events:none;
+    background:
+        linear-gradient(rgba(0,255,120,.035) 1px,transparent 1px),
+        linear-gradient(90deg,rgba(0,255,120,.035) 1px,transparent 1px);
+    background-size:45px 45px;
+    animation:gridMove 12s linear infinite;
+}
+
+@keyframes gridMove{
+    from{background-position:0 0,0 0}
+    to{background-position:45px 45px,45px 45px}
+}
+
+/* ================= APP ================= */
+
+.app{
+    position:relative;
+    width:100%;
+    height:100%;
+    display:flex;
+    flex-direction:column;
+}
+
+/* ================= TOP BAR ================= */
+
+.topbar{
+    height:72px;
+    min-height:72px;
+    border-bottom:1px solid rgba(0,255,120,.18);
+    background:rgba(2,8,7,.88);
+    backdrop-filter:blur(18px);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0 22px;
+    z-index:20;
+}
+
+.brand{
+    display:flex;
+    align-items:center;
+    gap:13px;
+}
+
+.brand-icon{
+    width:42px;
+    height:42px;
+    border:1px solid #00ff78;
+    display:grid;
+    place-items:center;
+    color:#00ff78;
+    font-size:20px;
+    box-shadow:0 0 25px rgba(0,255,120,.16);
+    position:relative;
+}
+
+.brand-icon:after{
+    content:"";
+    position:absolute;
+    inset:5px;
+    border:1px solid rgba(0,255,120,.35);
+    animation:spin 5s linear infinite;
+}
+
+@keyframes spin{
+    to{transform:rotate(360deg)}
+}
+
+.brand h1{
+    font-size:18px;
+    letter-spacing:4px;
+    font-weight:800;
+}
+
+.brand small{
+    display:block;
+    color:#6e8c7b;
+    font-size:9px;
+    letter-spacing:2px;
+    margin-top:3px;
+}
+
+.status{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    font-size:11px;
+    letter-spacing:2px;
+    color:#80a994;
+}
+
+.status-dot{
+    width:9px;
+    height:9px;
+    background:#777;
+    border-radius:50%;
+    box-shadow:0 0 0 transparent;
+}
+
+.status-dot.live{
+    background:#00ff78;
+    box-shadow:0 0 16px #00ff78;
+    animation:pulse 1.4s infinite;
+}
+
+@keyframes pulse{
+    50%{opacity:.35}
+}
+
+/* ================= MAIN ================= */
+
+.main{
+    flex:1;
+    min-height:0;
+    display:grid;
+    grid-template-columns:240px minmax(0,1fr) 310px;
+    gap:12px;
+    padding:12px;
+}
+
+/* ================= LEFT ================= */
+
+.panel{
+    border:1px solid rgba(0,255,120,.16);
+    background:rgba(3,11,8,.78);
+    backdrop-filter:blur(16px);
+    overflow:hidden;
+}
+
+.left{
+    display:flex;
+    flex-direction:column;
+}
+
+.panel-title{
+    height:44px;
+    border-bottom:1px solid rgba(0,255,120,.12);
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    padding:0 14px;
+    font-size:10px;
+    letter-spacing:2px;
+    color:#79a58c;
+}
+
+.panel-title strong{
+    color:#d8ffe5;
+}
+
+.metric{
+    padding:15px;
+    border-bottom:1px solid rgba(0,255,120,.08);
+}
+
+.metric-label{
+    font-size:9px;
+    color:#557363;
+    letter-spacing:2px;
+    margin-bottom:6px;
+}
+
+.metric-value{
+    font-size:27px;
+    font-weight:800;
+    color:#eafff0;
+}
+
+.metric-value.green{
+    color:#00ff78;
+    text-shadow:0 0 20px rgba(0,255,120,.3);
+}
+
+.mode{
+    margin:15px;
+    padding:12px;
+    border:1px solid rgba(0,255,120,.16);
+    background:rgba(0,255,120,.025);
+}
+
+.mode-title{
+    color:#00ff78;
+    font-size:10px;
+    letter-spacing:2px;
+    margin-bottom:10px;
+}
+
+.mode-row{
+    display:flex;
+    justify-content:space-between;
+    padding:6px 0;
+    color:#789484;
+    font-size:10px;
+}
+
+.mode-row span:last-child{
+    color:#d8ffe5;
+}
+
+/* ================= CAMERA ================= */
+
+.camera-wrap{
+    position:relative;
+    min-width:0;
+    min-height:0;
+    border:1px solid rgba(0,255,120,.2);
+    background:#000;
+    overflow:hidden;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
+
+#video{
+    width:100%;
+    height:100%;
+    object-fit:contain;
+    display:block;
+    background:#000;
+}
+
+#overlay{
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+    pointer-events:none;
+}
+
+/* scanning */
+
+.scan{
+    position:absolute;
+    left:0;
+    right:0;
+    height:2px;
+    background:linear-gradient(
+        90deg,
+        transparent,
+        rgba(0,255,120,.8),
+        transparent
+    );
+    box-shadow:0 0 20px #00ff78;
+    opacity:.55;
+    animation:scan 4s linear infinite;
+    pointer-events:none;
+}
+
+@keyframes scan{
+    0%{top:0}
+    100%{top:100%}
+}
+
+/* corner frame */
+
+.corner{
+    position:absolute;
+    width:28px;
+    height:28px;
+    border-color:#00ff78;
+    opacity:.8;
+}
+
+.c1{
+    top:12px;
+    left:12px;
+    border-top:2px solid;
+    border-left:2px solid;
+}
+.c2{
+    top:12px;
+    right:12px;
+    border-top:2px solid;
+    border-right:2px solid;
+}
+.c3{
+    bottom:12px;
+    left:12px;
+    border-bottom:2px solid;
+    border-left:2px solid;
+}
+.c4{
+    bottom:12px;
+    right:12px;
+    border-bottom:2px solid;
+    border-right:2px solid;
+}
+
+.camera-info{
+    position:absolute;
+    left:18px;
+    top:17px;
+    font-size:9px;
+    color:#9ac3a9;
+    letter-spacing:2px;
+    background:rgba(0,0,0,.5);
+    padding:6px 9px;
+    border-left:2px solid #00ff78;
+}
+
+/* ================= RIGHT ================= */
+
+.right{
+    display:flex;
+    flex-direction:column;
+    min-height:0;
+}
+
+.object-list{
+    flex:1;
+    min-height:0;
+    overflow:auto;
+}
+
+.object{
+    padding:12px 14px;
+    border-bottom:1px solid rgba(0,255,120,.08);
+    display:grid;
+    grid-template-columns:42px 1fr auto;
+    gap:10px;
+    align-items:center;
+    animation:objectIn .25s ease;
+}
+
+@keyframes objectIn{
+    from{
+        opacity:0;
+        transform:translateX(10px);
+    }
+    to{
+        opacity:1;
+        transform:translateX(0);
+    }
+}
+
+.object-icon{
+    width:36px;
+    height:36px;
+    border:1px solid rgba(0,255,120,.3);
+    color:#00ff78;
+    display:grid;
+    place-items:center;
+    font-size:14px;
+}
+
+.object-name{
+    font-size:11px;
+    color:#dfffea;
+    font-weight:700;
+    letter-spacing:1px;
+}
+
+.object-meta{
+    margin-top:5px;
+    color:#587463;
+    font-size:9px;
+}
+
+.object-conf{
+    font-size:10px;
+    color:#00ff78;
+}
+
+.empty{
+    height:100%;
+    min-height:200px;
+    display:grid;
+    place-items:center;
+    text-align:center;
+    padding:30px;
+    color:#496153;
+}
+
+.empty-icon{
+    font-size:32px;
+    color:#00ff78;
+    opacity:.35;
+    margin-bottom:10px;
+}
+
+/* ================= BOTTOM ================= */
+
+.bottom{
+    height:82px;
+    min-height:82px;
+    border-top:1px solid rgba(0,255,120,.15);
+    background:rgba(2,8,7,.94);
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:10px 14px;
+    z-index:20;
+}
+
+button{
+    border:1px solid rgba(0,255,120,.22);
+    background:rgba(0,255,120,.035);
+    color:#bcefcf;
+    padding:12px 15px;
+    font-size:10px;
+    letter-spacing:1.5px;
+    cursor:pointer;
+    transition:.2s;
+}
+
+button:hover{
+    background:rgba(0,255,120,.12);
+    border-color:#00ff78;
+    color:#fff;
+    box-shadow:0 0 20px rgba(0,255,120,.1);
+}
+
+button.primary{
+    background:#00ff78;
+    color:#001b0b;
+    border-color:#00ff78;
+    font-weight:800;
+}
+
+button:disabled{
+    opacity:.35;
+    cursor:not-allowed;
+}
+
+.slider-box{
+    margin-left:auto;
+    min-width:190px;
+}
+
+.slider-label{
+    font-size:8px;
+    color:#587463;
+    letter-spacing:2px;
+    margin-bottom:7px;
+}
+
+input[type=range]{
+    width:150px;
+    accent-color:#00ff78;
+}
+
+/* ================= BOOT ================= */
+
+.boot{
+    position:fixed;
+    inset:0;
+    z-index:100;
+    background:#020504;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    transition:.6s;
+}
+
+.boot.hide{
+    opacity:0;
+    pointer-events:none;
+}
+
+.boot-inner{
+    width:min(500px,90vw);
+}
+
+.boot-logo{
+    color:#00ff78;
+    font-size:45px;
+    font-weight:900;
+    letter-spacing:10px;
+    text-align:center;
+    text-shadow:0 0 30px rgba(0,255,120,.35);
+}
+
+.boot-sub{
+    text-align:center;
+    margin-top:10px;
+    color:#587463;
+    font-size:9px;
+    letter-spacing:4px;
+}
+
+.progress{
+    margin-top:30px;
+    height:3px;
+    background:#102017;
+    overflow:hidden;
+}
+
+.progress i{
+    display:block;
+    height:100%;
+    width:0;
+    background:#00ff78;
+    box-shadow:0 0 20px #00ff78;
+    transition:width .25s;
+}
+
+.boot-log{
+    margin-top:15px;
+    height:90px;
+    overflow:hidden;
+    color:#587463;
+    font:10px monospace;
+    line-height:18px;
+}
+
+/* ================= TOAST ================= */
+
+.toast{
+    position:fixed;
+    right:20px;
+    bottom:105px;
+    z-index:80;
+    padding:12px 16px;
+    background:rgba(2,10,7,.95);
+    border:1px solid #00ff78;
+    color:#caffd9;
+    font-size:10px;
+    letter-spacing:1px;
+    transform:translateY(30px);
+    opacity:0;
+    pointer-events:none;
+    transition:.3s;
+}
+
+.toast.show{
+    transform:translateY(0);
+    opacity:1;
+}
+
+/* ================= MOBILE ================= */
+
+@media(max-width:1000px){
+
+    .main{
+        grid-template-columns:1fr;
+        grid-template-rows:minmax(300px,1fr) 190px;
+    }
+
+    .left{
+        display:none;
+    }
+
+    .right{
+        min-height:190px;
+    }
+
+    .object-list{
+        display:flex;
+        overflow-x:auto;
+    }
+
+    .object{
+        min-width:190px;
+        border-right:1px solid rgba(0,255,120,.08);
+    }
+
+    .slider-box{
+        display:none;
+    }
+
+}
+
+@media(max-width:600px){
+
+    .topbar{
+        height:60px;
+        min-height:60px;
+        padding:0 12px;
+    }
+
+    .brand h1{
+        font-size:13px;
+        letter-spacing:3px;
+    }
+
+    .brand small{
+        display:none;
+    }
+
+    .brand-icon{
+        width:34px;
+        height:34px;
+    }
+
+    .status{
+        font-size:8px;
+    }
+
+    .bottom{
+        height:70px;
+        min-height:70px;
+        overflow-x:auto;
+    }
+
+    button{
+        white-space:nowrap;
+        padding:10px 11px;
+    }
+
+}
+</style>
+</head>
+
+<body>
+
+<!-- ================= BOOT ================= -->
+
+<div class="boot" id="boot">
+    <div class="boot-inner">
+        <div class="boot-logo">VISION</div>
+        <div class="boot-sub">REAL-TIME OBJECT PERCEPTION SYSTEM</div>
+
+        <div class="progress">
+            <i id="progressBar"></i>
+        </div>
+
+        <div class="boot-log" id="bootLog"></div>
+    </div>
+</div>
+
+<!-- ================= APP ================= -->
+
+<div class="app">
+
+<header class="topbar">
+
+    <div class="brand">
+        <div class="brand-icon">◈</div>
+
+        <div>
+            <h1>VISION TRACKER X</h1>
+            <small>REAL-TIME COMPUTER VISION</small>
+        </div>
+    </div>
+
+    <div class="status">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="statusText">INITIALIZING</span>
+    </div>
+
+</header>
+
+<main class="main">
+
+    <!-- LEFT TELEMETRY -->
+
+    <section class="panel left">
+
+        <div class="panel-title">
+            SYSTEM
+            <strong>LIVE</strong>
+        </div>
+
+        <div class="metric">
+            <div class="metric-label">TRACKED TARGETS</div>
+            <div class="metric-value green" id="targetCount">0</div>
+        </div>
+
+        <div class="metric">
+            <div class="metric-label">HUMANS</div>
+            <div class="metric-value" id="humanCount">0</div>
+        </div>
+
+        <div class="metric">
+            <div class="metric-label">OBJECTS</div>
+            <div class="metric-value" id="objectCount">0</div>
+        </div>
+
+        <div class="metric">
+            <div class="metric-label">FPS</div>
+            <div class="metric-value" id="fps">0</div>
+        </div>
+
+        <div class="mode">
+            <div class="mode-title">DETECTION ENGINE</div>
+
+            <div class="mode-row">
+                <span>MODEL</span>
+                <span>COCO-SSD</span>
+            </div>
+
+            <div class="mode-row">
+                <span>TRACKER</span>
+                <span>IoU + CENTER</span>
+            </div>
+
+            <div class="mode-row">
+                <span>OUTPUT</span>
+                <span>GREEN BOX</span>
+            </div>
+
+            <div class="mode-row">
+                <span>STATUS</span>
+                <span id="engineStatus">BOOT</span>
+            </div>
+        </div>
+
+    </section>
+
+
+    <!-- CAMERA -->
+
+    <section class="camera-wrap" id="cameraWrap">
+
+        <video
+            id="video"
+            autoplay
+            muted
+            playsinline>
+        </video>
+
+        <canvas id="overlay"></canvas>
+
+        <div class="scan"></div>
+
+        <div class="corner c1"></div>
+        <div class="corner c2"></div>
+        <div class="corner c3"></div>
+        <div class="corner c4"></div>
+
+        <div class="camera-info">
+            CAMERA / <span id="resolution">WAITING</span>
+        </div>
+
+    </section>
+
+
+    <!-- RIGHT INTELLIGENCE -->
+
+    <section class="panel right">
+
+        <div class="panel-title">
+            DETECTED TARGETS
+            <strong id="listCount">0</strong>
+        </div>
+
+        <div class="object-list" id="objectList">
+
+            <div class="empty">
+                <div>
+                    <div class="empty-icon">◎</div>
+                    <div>NO TARGETS DETECTED</div>
+                    <small style="display:block;margin-top:7px">
+                        POINT CAMERA AT A PERSON OR OBJECT
+                    </small>
+                </div>
+            </div>
+
+        </div>
+
+    </section>
+
+</main>
+
+
+<!-- CONTROLS -->
+
+<footer class="bottom">
+
+    <button class="primary" id="startBtn">
+        START CAMERA
+    </button>
+
+    <button id="pauseBtn" disabled>
+        PAUSE
+    </button>
+
+    <button id="cameraBtn" disabled>
+        SWITCH CAMERA
+    </button>
+
+    <button id="snapshotBtn" disabled>
+        SNAPSHOT
+    </button>
+
+    <button id="fullscreenBtn">
+        FULLSCREEN
+    </button>
+
+    <div class="slider-box">
+
+        <div class="slider-label">
+            DETECTION CONFIDENCE
+            <span id="confidenceValue">45%</span>
+        </div>
+
+        <input
+            id="confidence"
+            type="range"
+            min="20"
+            max="90"
+            value="45">
+
+    </div>
+
+</footer>
+
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+
+/* ============================================================
+   VISION TRACKER X
+   ============================================================ */
+
+const video = document.getElementById("video");
+const canvas = document.getElementById("overlay");
+const ctx = canvas.getContext("2d");
+
+const boot = document.getElementById("boot");
+const bootLog = document.getElementById("bootLog");
+const progressBar = document.getElementById("progressBar");
+
+const startBtn = document.getElementById("startBtn");
+const pauseBtn = document.getElementById("pauseBtn");
+const cameraBtn = document.getElementById("cameraBtn");
+const snapshotBtn = document.getElementById("snapshotBtn");
+const fullscreenBtn = document.getElementById("fullscreenBtn");
+
+const statusDot = document.getElementById("statusDot");
+const statusText = document.getElementById("statusText");
+
+const targetCount = document.getElementById("targetCount");
+const humanCount = document.getElementById("humanCount");
+const objectCount = document.getElementById("objectCount");
+const fpsDisplay = document.getElementById("fps");
+const engineStatus = document.getElementById("engineStatus");
+
+const objectList = document.getElementById("objectList");
+const listCount = document.getElementById("listCount");
+
+const confidenceSlider = document.getElementById("confidence");
+const confidenceValue = document.getElementById("confidenceValue");
+
+const resolution = document.getElementById("resolution");
+const toast = document.getElementById("toast");
+
+
+/* ============================================================
+   STATE
+   ============================================================ */
+
+let model = null;
+let stream = null;
+
+let running = false;
+let paused = false;
+
+let cameras = [];
+let currentCamera = 0;
+
+let tracks = [];
+let nextTrackId = 1;
+
+let lastDetectionTime = 0;
+let detectionBusy = false;
+
+let frameCounter = 0;
+let lastFpsTime = performance.now();
+let currentFPS = 0;
+
+let confidenceThreshold = 0.45;
+
+
+/* ============================================================
+   BOOT LOG
+   ============================================================ */
+
+function logBoot(text){
+
+    const line = document.createElement("div");
+
+    line.textContent = "> " + text;
+
+    bootLog.appendChild(line);
+
+    while(bootLog.children.length > 5){
+        bootLog.removeChild(bootLog.firstChild);
+    }
+}
+
+async function bootSequence(){
+
+    logBoot("INITIALIZING VISION CORE");
+    progressBar.style.width = "15%";
+
+    await sleep(400);
+
+    logBoot("CHECKING WEBRTC CAMERA ENGINE");
+    progressBar.style.width = "30%";
+
+    await sleep(400);
+
+    logBoot("LOADING OBJECT DETECTION MODEL");
+    progressBar.style.width = "50%";
+
+    try{
+
+        model = await cocoSsd.load({
+            base: "lite_mobilenet_v2"
+        });
+
+    }catch(error){
+
+        console.error(error);
+
+        logBoot("MODEL LOAD FAILED");
+
+        showToast("MODEL FAILED — CHECK INTERNET CONNECTION");
+
+        statusText.textContent = "MODEL ERROR";
+
+        return;
+    }
+
+    progressBar.style.width = "80%";
+
+    logBoot("INITIALIZING TRACKING ENGINE");
+
+    await sleep(300);
+
+    logBoot("VISION SYSTEM READY");
+
+    progressBar.style.width = "100%";
+
+    await sleep(500);
+
+    boot.classList.add("hide");
+
+    engineStatus.textContent = "READY";
+    statusText.textContent = "STANDBY";
+
+    enumerateCameras();
+}
+
+function sleep(ms){
+    return new Promise(resolve => setTimeout(resolve,ms));
+}
+
+
+/* ============================================================
+   CAMERA ENUMERATION
+   ============================================================ */
+
+async function enumerateCameras(){
+
+    try{
+
+        const devices = await navigator.mediaDevices.enumerateDevices();
+
+        cameras = devices.filter(
+            device => device.kind === "videoinput"
+        );
+
+        cameraBtn.disabled = cameras.length < 2;
+
+    }catch(error){
+
+        console.error(error);
+
+    }
+}
+
+
+/* ============================================================
+   START CAMERA
+   ============================================================ */
+
+async function startCamera(){
+
+    try{
+
+        if(stream){
+
+            stream.getTracks().forEach(track => track.stop());
+
+        }
+
+        statusText.textContent = "REQUESTING CAMERA";
+
+        stream = await navigator.mediaDevices.getUserMedia({
+
+            video:{
+                width:{
+                    ideal:1280
+                },
+                height:{
+                    ideal:720
+                },
+                frameRate:{
+                    ideal:30,
+                    max:30
+                },
+                facingMode:"environment"
+            },
+
+            audio:false
+
+        });
+
+        video.srcObject = stream;
+
+        await video.play();
+
+        await enumerateCameras();
+
+        resolution.textContent =
+            video.videoWidth + " × " + video.videoHeight;
+
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
+
+        running = true;
+        paused = false;
+
+        pauseBtn.disabled = false;
+        cameraBtn.disabled = cameras.length < 2;
+        snapshotBtn.disabled = false;
+
+        startBtn.textContent = "CAMERA ACTIVE";
+
+        startBtn.disabled = true;
+
+        pauseBtn.textContent = "PAUSE";
+
+        statusDot.classList.add("live");
+
+        statusText.textContent = "LIVE";
+
+        engineStatus.textContent = "TRACKING";
+
+        showToast("CAMERA CONNECTED");
+
+        tracks = [];
+
+        requestAnimationFrame(mainLoop);
+
+    }catch(error){
+
+        console.error(error);
+
+        statusDot.classList.remove("live");
+
+        statusText.textContent = "CAMERA ERROR";
+
+        showToast(
+            "CAMERA ACCESS FAILED — ALLOW CAMERA PERMISSION"
+        );
+
+    }
+
+}
+
+
+/* ============================================================
+   MAIN LOOP
+   ============================================================ */
+
+async function mainLoop(timestamp){
+
+    if(!running){
+
+        return;
+
+    }
+
+    if(!paused && !detectionBusy){
+
+        /*
+         * Run detector approximately 8-12 times/sec.
+         * This prevents weak devices from freezing.
+         */
+
+        if(timestamp - lastDetectionTime > 100){
+
+            lastDetectionTime = timestamp;
+
+            detectFrame();
+
+        }
+
+    }
+
+    drawScene();
+
+    updateFPS();
+
+    requestAnimationFrame(mainLoop);
+
+}
+
+
+/* ============================================================
+   DETECTION
+   ============================================================ */
+
+async function detectFrame(){
+
+    if(
+        !model ||
+        video.readyState < 2 ||
+        detectionBusy ||
+        paused
+    ){
+
+        return;
+
+    }
+
+    detectionBusy = true;
+
+    try{
+
+        const predictions = await model.detect(
+            video,
+            30,
+            confidenceThreshold
+        );
+
+        /*
+         * IMPORTANT:
+         * COCO-SSD returns:
+         *
+         * class
+         * score
+         * bbox [x,y,width,height]
+         */
+
+        const detections = predictions
+            .filter(item => item.score >= confidenceThreshold)
+            .map(item => {
+
+                const [x,y,w,h] = item.bbox;
+
+                return {
+
+                    x,
+                    y,
+                    w,
+                    h,
+
+                    cx:x + w / 2,
+                    cy:y + h / 2,
+
+                    class:item.class,
+                    score:item.score,
+
+                    type:item.class === "person"
+                        ? "human"
+                        : "object"
+
+                };
+
+            });
+
+        updateTracks(detections);
+
+        updateInterface();
+
+    }catch(error){
+
+        console.error(
+            "Detection error:",
+            error
+        );
+
+    }
+
+    detectionBusy = false;
+
+}
+
+
+/* ============================================================
+   TRACKING ENGINE
+   ============================================================ */
+
+function updateTracks(detections){
+
+    const now = performance.now();
+
+    /*
+     * Mark all existing tracks as unmatched.
+     */
+
+    tracks.forEach(track => {
+
+        track.matched = false;
+
+    });
+
+
+    /*
+     * Build possible matches.
+     */
+
+    const candidates = [];
+
+    for(let d = 0; d < detections.length; d++){
+
+        const detection = detections[d];
+
+        for(let t = 0; t < tracks.length; t++){
+
+            const track = tracks[t];
+
+            if(track.matched){
+                continue;
+            }
+
+            /*
+             * Don't match a human to a random object.
+             */
+
+            if(track.type !== detection.type){
+                continue;
+            }
+
+            const iouValue = IoU(
+                track,
+                detection
+            );
+
+            const distance = Math.hypot(
+                track.cx - detection.cx,
+                track.cy - detection.cy
+            );
+
+            /*
+             * Dynamic distance threshold.
+             */
+
+            const size =
+                Math.max(
+                    detection.w,
+                    detection.h
+                );
+
+            const maxDistance =
+                Math.max(
+                    55,
+                    size * 0.65
+                );
+
+            if(
+                iouValue > 0.12 ||
+                distance < maxDistance
+            ){
+
+                /*
+                 * Higher score = better match.
+                 */
+
+                const matchScore =
+                    iouValue * 3 -
+                    distance / Math.max(size,1);
+
+                candidates.push({
+                    d,
+                    t,
+                    score:matchScore
+                });
+
+            }
+
+        }
+
+    }
+
+
+    /*
+     * Sort best matches first.
+     */
+
+    candidates.sort(
+        (a,b) => b.score - a.score
+    );
+
+    const usedDetections = new Set();
+    const usedTracks = new Set();
+
+
+    /*
+     * Apply matches.
+     */
+
+    for(const candidate of candidates){
+
+        if(
+            usedDetections.has(candidate.d) ||
+            usedTracks.has(candidate.t)
+        ){
+            continue;
+        }
+
+        const detection =
+            detections[candidate.d];
+
+        const track =
+            tracks[candidate.t];
+
+        track.prevCx = track.cx;
+        track.prevCy = track.cy;
+
+        track.x = detection.x;
+        track.y = detection.y;
+
+        track.w = detection.w;
+        track.h = detection.h;
+
+        track.cx = detection.cx;
+        track.cy = detection.cy;
+
+        track.class = detection.class;
+        track.score = detection.score;
+
+        track.type = detection.type;
+
+        track.lastSeen = now;
+        track.missed = 0;
+        track.matched = true;
+
+        track.vx =
+            track.cx - track.prevCx;
+
+        track.vy =
+            track.cy - track.prevCy;
+
+        track.speed =
+            Math.hypot(
+                track.vx,
+                track.vy
+            );
+
+        usedDetections.add(candidate.d);
+        usedTracks.add(candidate.t);
+
+    }
+
+
+    /*
+     * Create new tracks.
+     */
+
+    detections.forEach(
+        (detection,index) => {
+
+            if(usedDetections.has(index)){
+                return;
+            }
+
+            tracks.push({
+
+                id:nextTrackId++,
+
+                x:detection.x,
+                y:detection.y,
+
+                w:detection.w,
+                h:detection.h,
+
+                cx:detection.cx,
+                cy:detection.cy,
+
+                prevCx:detection.cx,
+                prevCy:detection.cy,
+
+                vx:0,
+                vy:0,
+                speed:0,
+
+                class:detection.class,
+                type:detection.type,
+
+                score:detection.score,
+
+                lastSeen:now,
+                missed:0,
+
+                matched:true
+
+            });
+
+        }
+    );
+
+
+    /*
+     * Increase missed counter.
+     */
+
+    tracks.forEach(track => {
+
+        if(!track.matched){
+
+            track.missed++;
+
+        }
+
+    });
+
+
+    /*
+     * Remove objects that disappeared.
+     *
+     * A few missed frames are allowed so the ID
+     * doesn't instantly disappear when detection
+     * temporarily misses a frame.
+     */
+
+    tracks = tracks.filter(
+        track => track.missed < 8
+    );
+
+}
+
+
+/* ============================================================
+   IOU
+   ============================================================ */
+
+function IoU(a,b){
+
+    const ax1 = a.x;
+    const ay1 = a.y;
+
+    const ax2 = a.x + a.w;
+    const ay2 = a.y + a.h;
+
+    const bx1 = b.x;
+    const by1 = b.y;
+
+    const bx2 = b.x + b.w;
+    const by2 = b.y + b.h;
+
+    const ix1 = Math.max(ax1,bx1);
+    const iy1 = Math.max(ay1,by1);
+
+    const ix2 = Math.min(ax2,bx2);
+    const iy2 = Math.min(ay2,by2);
+
+    const iw = Math.max(0,ix2-ix1);
+    const ih = Math.max(0,iy2-iy1);
+
+    const intersection = iw * ih;
+
+    const areaA = a.w * a.h;
+    const areaB = b.w * b.h;
+
+    const union =
+        areaA +
+        areaB -
+        intersection;
+
+    if(union <= 0){
+        return 0;
+    }
+
+    return intersection / union;
+
+}
+
+
+/* ============================================================
+   DRAWING
+   ============================================================ */
+
+function drawScene(){
+
+    if(
+        !canvas.width ||
+        !canvas.height
+    ){
+
+        return;
+
+    }
+
+    ctx.clearRect(
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+
+
+    /*
+     * Draw every tracked target.
+     */
+
+    tracks.forEach(track => {
+
+        /*
+         * Don't display stale tracks for too long.
+         */
+
+        if(track.missed > 2){
+            return;
+        }
+
+        const x = track.x;
+        const y = track.y;
+        const w = track.w;
+        const h = track.h;
+
+        /*
+         * GREEN BOX
+         */
+
+        ctx.strokeStyle = "#00ff78";
+        ctx.lineWidth = 3;
+
+        ctx.strokeRect(
+            x,
+            y,
+            w,
+            h
+        );
+
+
+        /*
+         * Corner accents.
+         */
+
+        drawCorners(
+            x,
+            y,
+            w,
+            h
+        );
+
+
+        /*
+         * LABEL
+         */
+
+        const label =
+            track.type === "human"
+                ? `HUMAN #${track.id}`
+                : `OBJECT #${track.id}`;
+
+        const confidence =
+            Math.round(
+                track.score * 100
+            );
+
+        const text =
+            `${label}  ${confidence}%`;
+
+
+        ctx.font =
+            "bold 13px Arial";
+
+        const textWidth =
+            ctx.measureText(text).width;
+
+        const labelHeight = 27;
+
+        /*
+         * Keep label inside screen.
+         */
+
+        const labelX =
+            Math.max(
+                2,
+                Math.min(
+                    x,
+                    canvas.width -
+                    textWidth -
+                    16
+                )
+            );
+
+        const labelY =
+            Math.max(
+                labelHeight,
+                y
+            );
+
+
+        /*
+         * Label background.
+         */
+
+        ctx.fillStyle =
+            "rgba(0,20,10,.92)";
+
+        ctx.fillRect(
+            labelX,
+            labelY - labelHeight,
+            textWidth + 16,
+            labelHeight
+        );
+
+
+        /*
+         * Green label border.
+         */
+
+        ctx.strokeStyle =
+            "#00ff78";
+
+        ctx.lineWidth = 1;
+
+        ctx.strokeRect(
+            labelX,
+            labelY - labelHeight,
+            textWidth + 16,
+            labelHeight
+        );
+
+
+        /*
+         * Label text.
+         */
+
+        ctx.fillStyle =
+            "#dffff0";
+
+        ctx.fillText(
+            text,
+            labelX + 8,
+            labelY - 9
+        );
+
+
+        /*
+         * Center target marker.
+         */
+
+        ctx.beginPath();
+
+        ctx.arc(
+            track.cx,
+            track.cy,
+            4,
+            0,
+            Math.PI * 2
+        );
+
+        ctx.fillStyle =
+            "#00ff78";
+
+        ctx.fill();
+
+
+        /*
+         * Movement line.
+         */
+
+        if(track.speed > 2){
+
+            ctx.beginPath();
+
+            ctx.moveTo(
+                track.cx,
+                track.cy
+            );
+
+            ctx.lineTo(
+                track.cx -
+                track.vx * 8,
+                track.cy -
+                track.vy * 8
+            );
+
+            ctx.strokeStyle =
+                "rgba(0,255,120,.45)";
+
+            ctx.lineWidth = 2;
+
+            ctx.stroke();
+
+        }
+
+    });
+
+}
+
+
+/* ============================================================
+   BOX CORNERS
+   ============================================================ */
+
+function drawCorners(x,y,w,h){
+
+    const len =
+        Math.min(
+            15,
+            Math.max(
+                7,
+                Math.min(w,h) * .18
+            )
+        );
+
+    ctx.beginPath();
+
+    /* top left */
+
+    ctx.moveTo(x,y+len);
+    ctx.lineTo(x,y);
+    ctx.lineTo(x+len,y);
+
+    /* top right */
+
+    ctx.moveTo(x+w-len,y);
+    ctx.lineTo(x+w,y);
+    ctx.lineTo(x+w,y+len);
+
+    /* bottom right */
+
+    ctx.moveTo(x+w,y+h-len);
+    ctx.lineTo(x+w,y+h);
+    ctx.lineTo(x+w-len,y+h);
+
+    /* bottom left */
+
+    ctx.moveTo(x+len,y+h);
+    ctx.lineTo(x,y+h);
+    ctx.lineTo(x,y+h-len);
+
+    ctx.strokeStyle =
+        "#00ff78";
+
+    ctx.lineWidth = 4;
+
+    ctx.stroke();
+
+}
+
+
+/* ============================================================
+   INTERFACE
+   ============================================================ */
+
+function updateInterface(){
+
+    const humans =
+        tracks.filter(
+            t => t.type === "human"
+        );
+
+    const objects =
+        tracks.filter(
+            t => t.type === "object"
+        );
+
+    targetCount.textContent =
+        tracks.length;
+
+    humanCount.textContent =
+        humans.length;
+
+    objectCount.textContent =
+        objects.length;
+
+    listCount.textContent =
+        tracks.length;
+
+    renderObjectList();
+
+}
+
+
+/* ============================================================
+   OBJECT LIST
+   ============================================================ */
+
+function renderObjectList(){
+
+    if(tracks.length === 0){
+
+        objectList.innerHTML = `
+
+            <div class="empty">
+
+                <div>
+
+                    <div class="empty-icon">◎</div>
+
+                    <div>
+                        NO TARGETS DETECTED
+                    </div>
+
+                    <small
+                        style="
+                        display:block;
+                        margin-top:7px;
+                        color:#496153
+                        "
+                    >
+                        POINT CAMERA AT A PERSON OR OBJECT
+                    </small>
+
+                </div>
+
+            </div>
+
+        `;
+
+        return;
+
+    }
+
+
+    objectList.innerHTML = "";
+
+
+    tracks
+        .filter(track => track.missed <= 2)
+        .sort((a,b) => a.id-b.id)
+        .forEach(track => {
+
+            const element =
+                document.createElement("div");
+
+            element.className =
+                "object";
+
+
+            const icon =
+                track.type === "human"
+                    ? "♙"
+                    : "◆";
+
+
+            const typeText =
+                track.type === "human"
+                    ? "HUMAN"
+                    : "OBJECT";
+
+
+            const confidence =
+                Math.round(
+                    track.score * 100
+                );
+
+
+            element.innerHTML = `
+
+                <div class="object-icon">
+                    ${icon}
+                </div>
+
+                <div>
+
+                    <div class="object-name">
+                        ${typeText}
+                        #${track.id}
+                    </div>
+
+                    <div class="object-meta">
+                        ${escapeHTML(track.class)}
+                        ·
+                        ${Math.round(track.w)}×${Math.round(track.h)}
+                    </div>
+
+                </div>
+
+                <div class="object-conf">
+                    ${confidence}%
+                </div>
+
+            `;
+
+            objectList.appendChild(element);
+
+        });
+
+}
+
+
+/* ============================================================
+   FPS
+   ============================================================ */
+
+function updateFPS(){
+
+    frameCounter++;
+
+    const now =
+        performance.now();
+
+    if(now - lastFpsTime >= 1000){
+
+        currentFPS =
+            frameCounter;
+
+        frameCounter = 0;
+
+        lastFpsTime = now;
+
+        fpsDisplay.textContent =
+            currentFPS;
+
+    }
+
+}
+
+
+/* ============================================================
+   PAUSE
+   ============================================================ */
+
+pauseBtn.addEventListener(
+    "click",
+    () => {
+
+        paused = !paused;
+
+        if(paused){
+
+            pauseBtn.textContent =
+                "RESUME";
+
+            statusText.textContent =
+                "PAUSED";
+
+            engineStatus.textContent =
+                "PAUSED";
+
+            showToast(
+                "VISION PAUSED"
+            );
+
+        }else{
+
+            pauseBtn.textContent =
+                "PAUSE";
+
+            statusText.textContent =
+                "LIVE";
+
+            engineStatus.textContent =
+                "TRACKING";
+
+            showToast(
+                "VISION RESUMED"
+            );
+
+        }
+
+    }
+);
+
+
+/* ============================================================
+   SWITCH CAMERA
+   ============================================================ */
+
+cameraBtn.addEventListener(
+    "click",
+    async () => {
+
+        if(cameras.length < 2){
+            showToast(
+                "NO SECOND CAMERA FOUND"
+            );
+            return;
+        }
+
+        currentCamera++;
+
+        if(currentCamera >= cameras.length){
+            currentCamera = 0;
+        }
+
+        const selected =
+            cameras[currentCamera];
+
+        try{
+
+            if(stream){
+
+                stream
+                    .getTracks()
+                    .forEach(
+                        track =>
+                            track.stop()
+                    );
+
+            }
+
+            stream =
+                await navigator.mediaDevices
+                    .getUserMedia({
+
+                        video:{
+                            deviceId:{
+                                exact:
+                                    selected.deviceId
+                            },
+                            width:{
+                                ideal:1280
+                            },
+                            height:{
+                                ideal:720
+                            }
+                        },
+
+                        audio:false
+
+                    });
+
+            video.srcObject =
+                stream;
+
+            await video.play();
+
+            canvas.width =
+                video.videoWidth;
+
+            canvas.height =
+                video.videoHeight;
+
+            resolution.textContent =
+                video.videoWidth +
+                " × " +
+                video.videoHeight;
+
+            tracks = [];
+
+            showToast(
+                "CAMERA SWITCHED"
+            );
+
+        }catch(error){
+
+            console.error(error);
+
+            showToast(
+                "CAMERA SWITCH FAILED"
+            );
+
+        }
+
+    }
+);
+
+
+/* ============================================================
+   SNAPSHOT
+   ============================================================ */
+
+snapshotBtn.addEventListener(
+    "click",
+    () => {
+
+        if(
+            !video.videoWidth ||
+            !video.videoHeight
+        ){
+
+            showToast(
+                "CAMERA NOT READY"
+            );
+
+            return;
+
+        }
+
+
+        const shot =
+            document.createElement(
+                "canvas"
+            );
+
+        shot.width =
+            video.videoWidth;
+
+        shot.height =
+            video.videoHeight;
+
+        const shotCtx =
+            shot.getContext("2d");
+
+
+        /*
+         * First copy camera image.
+         */
+
+        shotCtx.drawImage(
+            video,
+            0,
+            0,
+            shot.width,
+            shot.height
+        );
+
+
+        /*
+         * Then copy AI overlay.
+         */
+
+        shotCtx.drawImage(
+            canvas,
+            0,
+            0,
+            shot.width,
+            shot.height
+        );
+
+
+        shot.toBlob(
+            blob => {
+
+                if(!blob){
+                    return;
+                }
+
+                const url =
+                    URL.createObjectURL(blob);
+
+                const a =
+                    document.createElement("a");
+
+                a.href = url;
+
+                a.download =
+                    `vision-${Date.now()}.png`;
+
+                a.click();
+
+                URL.revokeObjectURL(url);
+
+                showToast(
+                    "SNAPSHOT SAVED"
+                );
+
+            },
+            "image/png"
+        );
+
+    }
+);
+
+
+/* ============================================================
+   FULLSCREEN
+   ============================================================ */
+
+fullscreenBtn.addEventListener(
+    "click",
+    async () => {
+
+        try{
+
+            if(!document.fullscreenElement){
+
+                await document.documentElement
+                    .requestFullscreen();
+
+                fullscreenBtn.textContent =
+                    "EXIT FULLSCREEN";
+
+            }else{
+
+                await document.exitFullscreen();
+
+                fullscreenBtn.textContent =
+                    "FULLSCREEN";
+
+            }
+
+        }catch(error){
+
+            console.error(error);
+
+        }
+
+    }
+);
+
+
+/* ============================================================
+   CONFIDENCE
+   ============================================================ */
+
+confidenceSlider.addEventListener(
+    "input",
+    () => {
+
+        confidenceThreshold =
+            Number(
+                confidenceSlider.value
+            ) / 100;
+
+        confidenceValue.textContent =
+            confidenceSlider.value +
+            "%";
+
+    }
+);
+
+
+/* ============================================================
+   START BUTTON
+   ============================================================ */
+
+startBtn.addEventListener(
+    "click",
+    startCamera
+);
+
+
+/* ============================================================
+   CAMERA ERROR / DISCONNECT
+   ============================================================ */
+
+if(navigator.mediaDevices){
+
+    navigator.mediaDevices.addEventListener(
+        "devicechange",
+        enumerateCameras
+    );
+
+}
+
+
+/* ============================================================
+   TOAST
+   ============================================================ */
+
+let toastTimer = null;
+
+function showToast(message){
+
+    toast.textContent =
+        message;
+
+    toast.classList.add("show");
+
+    clearTimeout(toastTimer);
+
+    toastTimer =
+        setTimeout(
+            () => {
+                toast.classList.remove(
+                    "show"
+                );
+            },
+            2200
+        );
+
+}
+
+
+/* ============================================================
+   HTML SAFETY
+   ============================================================ */
+
+function escapeHTML(text){
+
+    return String(text)
+        .replaceAll("&","&amp;")
+        .replaceAll("<","&lt;")
+        .replaceAll(">","&gt;")
+        .replaceAll('"',"&quot;")
+        .replaceAll("'","&#039;");
+
+}
+
+
+/* ============================================================
+   KEYBOARD
+   ============================================================ */
+
+document.addEventListener(
+    "keydown",
+    event => {
+
+        if(event.code === "Space"){
+
+            event.preventDefault();
+
+            if(!pauseBtn.disabled){
+
+                pauseBtn.click();
+
+            }
+
+        }
+
+        if(
+            event.key.toLowerCase() === "s" &&
+            !snapshotBtn.disabled
+        ){
+
+            snapshotBtn.click();
+
+        }
+
+    }
+);
+
+
+/* ============================================================
+   INITIALIZE
+   ============================================================ */
+
+bootSequence();
+
+</script>
+
+</body>
+</html>
