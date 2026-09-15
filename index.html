@@ -1,1 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HANDX - Advanced Hand Gesture Interface</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Google Fonts for typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="startup-screen" class="screen active">
+        <div class="startup-content">
+            <h1>HANDX</h1>
+            <p class="tagline">YOUR HAND. YOUR INTERFACE.</p>
+            <button id="btn-start" class="btn-primary">INITIALIZE SYSTEM</button>
+            <p id="startup-status" class="status-message"></p>
+        </div>
+    </div>
 
+    <div id="main-interface" class="screen">
+        <div class="video-container">
+            <video id="webcam" autoplay playsinline></video>
+            <canvas id="output-canvas"></canvas>
+            <canvas id="animation-canvas"></canvas>
+        </div>
+
+        <div class="hud">
+            <div class="hud-top">
+                <div class="hud-title">HANDX GESTURE INTERFACE</div>
+                <div id="camera-status" class="status-indicator active">CAMERA ONLINE</div>
+            </div>
+
+            <div class="hud-right">
+                <div id="gesture-status-panel" class="panel glass-panel">
+                    <h3>CURRENT GESTURE</h3>
+                    <div id="ui-current-gesture" class="gesture-name">IDLE</div>
+                    <div class="stat-row">
+                        <span>CONFIDENCE</span>
+                        <span id="ui-gesture-confidence">0%</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>ACTION</span>
+                        <span id="ui-gesture-action">NONE</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>HAND</span>
+                        <span id="ui-gesture-hand">-</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>STATUS</span>
+                        <span id="ui-gesture-state">WAITING</span>
+                    </div>
+                </div>
+                
+                <div id="debug-panel" class="panel glass-panel hidden">
+                    <h3>DEBUG MODE</h3>
+                    <div class="stat-row"><span>FPS</span><span id="ui-fps">0</span></div>
+                    <div class="stat-row"><span>Latency</span><span id="ui-latency">0ms</span></div>
+                    <div class="stat-row"><span>Hands</span><span id="ui-hand-count">0</span></div>
+                    <div class="stat-row"><span>Cursor X</span><span id="ui-cursor-x">0</span></div>
+                    <div class="stat-row"><span>Cursor Y</span><span id="ui-cursor-y">0</span></div>
+                </div>
+            </div>
+
+            <div class="hud-bottom">
+                <div class="mode-selector">
+                    <button class="mode-btn active" data-mode="MOUSE">MOUSE</button>
+                    <button class="mode-btn" data-mode="PRESENTATION">PRESENTATION</button>
+                    <button class="mode-btn" data-mode="ANIMATION">ANIMATION</button>
+                    <button class="mode-btn" data-mode="EXPERIMENTAL">EXPERIMENTAL</button>
+                </div>
+                <div class="hud-stats">
+                    <span id="ui-fps-mini">FPS: 0</span> | 
+                    <span id="ui-tracking-status">TRACKING: ACTIVE</span>
+                </div>
+            </div>
+        </div>
+        
+        <div id="virtual-cursor" class="virtual-cursor hidden"></div>
+        <div id="visual-feedback" class="visual-feedback"></div>
+    </div>
+    
+    <div id="error-screen" class="screen">
+        <div class="error-content">
+            <h2>SYSTEM ERROR</h2>
+            <p id="error-message">Camera access is unavailable. Check browser permissions and try again.</p>
+            <div class="error-actions">
+                <button id="btn-retry" class="btn-primary">RETRY</button>
+                <button id="btn-demo" class="btn-secondary">DEMO MODE</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MediaPipe Script Map -->
+    <script type="importmap">
+    {
+      "imports": {
+        "@mediapipe/tasks-vision": "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/vision_bundle.js"
+      }
+    }
+    </script>
+    <script type="module" src="js/app.js"></script>
+</body>
+</html>
