@@ -10,7 +10,10 @@ export const CommandsMode = {
         console.log("Commands Mode: EXIT");
     },
     
-    onGesture: (gesture, handInfo, timestamp) => {
+    onGestureEvent: (eventType, payload) => {
+        if (eventType !== 'ACTION_STARTED') return; // Only trigger on confirmation
+        
+        const { gesture } = payload;
         switch (gesture) {
             case 'ONE_FINGER':
                 console.log("Command: Open Google");

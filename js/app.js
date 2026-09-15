@@ -1,7 +1,7 @@
 import { initCamera, startCamera } from './camera.js';
 import { initTracker, updateTracker } from './tracker.js';
 import { updateCursor } from './cursor.js';
-import { updateGestures } from './gestures.js';
+import { GestureEngine } from './gesture_engine.js';
 import { renderAnimations } from './animations.js';
 import { MODES, requestModeChange } from './modes.js';
 
@@ -111,11 +111,11 @@ function updateLoop(timestamp) {
     if (results && results.landmarks) {
         state.hands = results.landmarks;
         updateCursor(results.landmarks);
-        updateGestures(results.landmarks, results.handednesses, timestamp);
+        GestureEngine.update(results.landmarks, results.handednesses, timestamp);
     } else {
         state.hands = null;
         updateCursor(null);
-        updateGestures(null, null, timestamp);
+        GestureEngine.update(null, null, timestamp);
     }
     
     // Render Animations

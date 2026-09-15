@@ -217,7 +217,8 @@ export const AirWritingMode = {
         console.log("Air Writing: EXIT");
     },
     
-    onGesture: (gesture, handInfo, timestamp) => {
+    onGestureEvent: (eventType, payload) => {
+        const { gesture, hand, timestamp } = payload;
         const penCursor = document.getElementById('pen-cursor');
         
         // Filter coordinates
@@ -226,6 +227,15 @@ export const AirWritingMode = {
         penCursor.style.left = `${x}px`;
         penCursor.style.top = `${y}px`;
         
+        if (eventType === 'ACTION_INTERRUPTED' || eventType === 'ACTION_COMPLETED') {
+            isDrawing = false;
+            penCursor.style.width = '20px';
+            penCursor.style.height = '20px';
+            penCursor.style.backgroundColor = 'rgba(255, 255, 255, 0.2)';
+            penCursor.style.border = '2px solid rgba(0, 243, 255, 0.8)';
+            return;
+        }
+
         if (gesture === 'OPEN_PALM') {
             isPaused = true;
             isDrawing = false;
@@ -237,21 +247,21 @@ export const AirWritingMode = {
         }
 
         if (gesture === 'FIST') {
-            // In a real app, hold for 1 sec.
-            clearCanvas();
+            if (eventType === 'ACTION_STARTED') {
+                clearCanvas(); // Hold clears canvas via Gesture Engine priority
+            }
             return;
         }
 
         const shouldDraw = (drawMode === 'CONTINUOUS' && gesture === 'ONE_FINGER') || 
                            (drawMode === 'PINCH' && gesture === 'PINCH');
 
-        if (shouldDraw) {
+        if (shouldDraw && (eventType === 'ACTION_STARTED' || eventType === 'ACTION_CONTINUE')) {
             penCursor.style.backgroundColor = penColor;
             penCursor.style.width = '8px';
             penCursor.style.height = '8px';
             
             // Velocity-aware thickness
-            // Slower -> Thicker, Faster -> Thinner
             let dynamicSize = basePenSize - (velocity * 2);
             dynamicSize = Math.max(2, Math.min(basePenSize + 2, dynamicSize));
             
@@ -265,8 +275,6 @@ export const AirWritingMode = {
                 redoStack = [];
             } else {
                 currentStroke.points.push({x, y, width: dynamicSize});
-                // Optimize: only redraw the newest segment instead of full canvas, but for simplicity here we redraw all or partial.
-                // For a high-fidelity app we'd draw onto a temporary canvas, but redrawCanvas() works for reasonable stroke counts.
                 redrawCanvas();
             }
         } else if (gesture === 'TWO_FINGERS') {

@@ -1,5 +1,6 @@
 // Mode Manager
 import { state } from './app.js';
+import { GestureEngine } from './gesture_engine.js';
 import { CommandsMode } from './commands.js';
 import { AirWritingMode } from './airwriting.js';
 import { AnimationLabMode } from './animation_lab.js';
@@ -17,23 +18,23 @@ export const MODES = {
 const VirtualMouseMode = {
     onEnter: () => console.log("Mouse Mode: ACTIVE"),
     onExit: () => console.log("Mouse Mode: EXIT"),
-    onGesture: (gesture, handInfo, timestamp) => {
-        if (gesture === 'PINCH') {
-            if (!state.isPinching) {
-                // Just entered pinch (gesture start handled in gestures.js logic, but click here)
+    onGestureEvent: (eventType, payload) => {
+        const { gesture, timestamp } = payload;
+        
+        if (eventType === 'ACTION_STARTED') {
+            if (gesture === 'PINCH') {
                 triggerClickEvent('mousedown');
                 playSound('click');
                 showRippleFeedback();
+            } else if (gesture === 'V_SIGN') {
+                captureScreenshot();
             }
-        } else if (state.isPinching) {
-            // Released pinch
-            triggerClickEvent('mouseup');
-            triggerClickEvent('click');
-            playSound('click');
-        }
-        
-        if (gesture === 'V_SIGN') {
-            captureScreenshot();
+        } else if (eventType === 'ACTION_COMPLETED') {
+            if (gesture === 'PINCH') {
+                triggerClickEvent('mouseup');
+                triggerClickEvent('click');
+                playSound('click');
+            }
         }
     },
     onSwipe: () => {}
@@ -70,12 +71,13 @@ const modeHandlers = {
     [MODES.COMMANDS]: CommandsMode
 };
 
-export function handleGestureAction(gesture, handInfo, timestamp) {
+// Event-Driven Dispatcher
+GestureEngine.addEventListener((eventType, payload) => {
     const handler = modeHandlers[state.interactionMode];
-    if (handler && handler.onGesture) {
-        handler.onGesture(gesture, handInfo, timestamp);
+    if (handler && handler.onGestureEvent) {
+        handler.onGestureEvent(eventType, payload);
     }
-}
+});
 
 export function handleSwipe(direction) {
     const handler = modeHandlers[state.interactionMode];

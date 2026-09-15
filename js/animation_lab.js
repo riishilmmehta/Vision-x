@@ -204,9 +204,30 @@ export const AnimationLabMode = {
         console.log("Animation Lab: EXIT");
     },
     
-    onGesture: (gesture, handInfo, timestamp) => {
+    onGestureEvent: (eventType, payload) => {
+        const { gesture, timestamp } = payload;
         const cx = state.cursorX;
         const cy = state.cursorY;
+        
+        if (eventType === 'ACTION_COMPLETED' || eventType === 'ACTION_INTERRUPTED') {
+            if (currentLab === 'PHYSICS_BALL') {
+                if (grabNode) {
+                    physics.particles = physics.particles.filter(p => p !== grabNode);
+                    physics.springs = [];
+                    grabNode = null;
+                }
+            } else if (currentLab === 'WEB_SHOOTER') {
+                if (webAnchor) {
+                    physics.clear();
+                    webAnchor = null;
+                }
+            } else if (currentLab === 'MAGNET') {
+                energyCharge = 0;
+            }
+            return;
+        }
+
+        if (eventType !== 'ACTION_STARTED' && eventType !== 'ACTION_CONTINUE') return;
         
         if (currentLab === 'PHYSICS_BALL') {
             if (gesture === 'PINCH') {
@@ -224,19 +245,9 @@ export const AnimationLabMode = {
                     grabNode.pos.x = cx;
                     grabNode.pos.y = cy;
                 }
-            } else {
-                if (grabNode) {
-                    physics.particles = physics.particles.filter(p => p !== grabNode);
-                    physics.springs = [];
-                    grabNode = null;
-                }
             }
         }
         else if (currentLab === 'WEB_SHOOTER') {
-            // SPIDER POSE: Index and Pinky extended, others closed
-            // Since we don't have full finger access here without changing gestures.js, 
-            // we will trigger web shooter on PINCH or "THREE_FINGERS" (surrogate for spider pose).
-            // Let's use PINCH to shoot, OPEN to release
             if (gesture === 'PINCH' && !webAnchor) {
                 // Shoot web to target
                 const handP = physics.addParticle(cx, cy, 10, true);
@@ -250,18 +261,13 @@ export const AnimationLabMode = {
             } else if (gesture === 'PINCH' && webAnchor) {
                 webAnchor.pos.x = cx;
                 webAnchor.pos.y = cy;
-            } else {
-                if (webAnchor) {
-                    physics.clear();
-                    webAnchor = null;
-                }
             }
         }
         else if (currentLab === 'ENERGY_HAND') {
             if (gesture === 'FIST') {
                 energyCharge = Math.min(150, energyCharge + 5);
             } else if (gesture === 'OPEN_PALM') {
-                if (energyCharge > 50) {
+                if (energyCharge > 50 && eventType === 'ACTION_STARTED') {
                     // BOOM
                     document.body.classList.add('shake');
                     setTimeout(() => document.body.classList.remove('shake'), 200);
@@ -273,19 +279,21 @@ export const AnimationLabMode = {
             if (gesture === 'FIST') {
                 energyCharge = 1; // charging
             } else if (gesture === 'OPEN_PALM' && energyCharge === 1) {
-                // blast
-                energyCharge = 0;
-                for(let i=0; i<50; i++) {
-                    const angle = Math.random() * Math.PI * 2;
-                    const speed = Math.random() * 15 + 5;
-                    particles.push({
-                        x: cx,
-                        y: cy,
-                        vx: Math.cos(angle) * speed,
-                        vy: Math.sin(angle) * speed,
-                        radius: Math.random() * 5 + 2,
-                        life: 1.0
-                    });
+                if (eventType === 'ACTION_STARTED') {
+                    // blast
+                    energyCharge = 0;
+                    for(let i=0; i<50; i++) {
+                        const angle = Math.random() * Math.PI * 2;
+                        const speed = Math.random() * 15 + 5;
+                        particles.push({
+                            x: cx,
+                            y: cy,
+                            vx: Math.cos(angle) * speed,
+                            vy: Math.sin(angle) * speed,
+                            radius: Math.random() * 5 + 2,
+                            life: 1.0
+                        });
+                    }
                 }
             }
         }
@@ -300,9 +308,7 @@ export const AnimationLabMode = {
             if (gesture === 'PINCH') {
                 energyCharge = 1; // active attraction
             } else if (gesture === 'OPEN_PALM') {
-                energyCharge = -1; // repel (handled in loop if we want, but currently hardcoded dir)
-            } else {
-                energyCharge = 0;
+                energyCharge = -1; // repel
             }
         }
     },

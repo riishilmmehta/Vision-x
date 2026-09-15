@@ -151,6 +151,34 @@
       }
     }
     </script>
-    <script type="module" src="js/app.js"></script>
+        <div id="debug-panel" class="glass-panel" style="position: absolute; right: 20px; top: 120px; width: 280px; z-index: 200; font-family: monospace; font-size: 12px; pointer-events: none; opacity: 0.9;">
+            <h3 style="color: var(--primary-color); margin-bottom: 10px; border-bottom: 1px solid rgba(0,243,255,0.3); padding-bottom: 5px;">DEBUG PANEL</h3>
+            <div id="debug-tracking">HAND DETECTED: <span id="dbg-detected">NO</span></div>
+            <div id="debug-hand">HAND: <span id="dbg-hand">-</span></div>
+            <div id="debug-fingers" style="margin-top: 5px;">
+                <div>THUMB: <span id="dbg-thumb">-</span></div>
+                <div>INDEX: <span id="dbg-index">-</span></div>
+                <div>MIDDLE: <span id="dbg-middle">-</span></div>
+                <div>RING: <span id="dbg-ring">-</span></div>
+                <div>PINKY: <span id="dbg-pinky">-</span></div>
+            </div>
+            <div id="debug-pinch" style="margin-top: 5px;">PINCH DISTANCE: <span id="dbg-pinch-dist">0.00</span></div>
+            
+            <h4 style="color: var(--primary-color); margin-top: 10px; border-bottom: 1px solid rgba(0,243,255,0.3); padding-bottom: 5px;">STATE MACHINE</h4>
+            <div id="debug-gesture">WINNER: <span id="dbg-winner" style="color: #ff0055;">NONE</span></div>
+            <div id="debug-confidence">CONFIDENCE: <span id="dbg-confidence">0%</span></div>
+            <div id="debug-state">STATE: <span id="dbg-state">NO_HAND</span></div>
+            <div id="debug-suppressed" style="color: #666;">SUPPRESSED: <span id="dbg-suppressed">NONE</span></div>
+            
+            <h4 style="color: var(--primary-color); margin-top: 10px; border-bottom: 1px solid rgba(0,243,255,0.3); padding-bottom: 5px;">APPLICATION</h4>
+            <div id="debug-mode">MODE: <span id="dbg-mode">VIRTUAL_MOUSE</span></div>
+            <div id="debug-action">ACTION: <span id="dbg-action">IDLE</span></div>
+            
+            <div id="debug-perf" style="margin-top: 10px; border-top: 1px solid rgba(0,243,255,0.3); padding-top: 5px; color: #aaa;">
+                FPS: <span id="dbg-fps">0</span> | LAT: <span id="dbg-lat">0ms</span>
+            </div>
+        </div>
+        
+        <script type="module" src="js/app.js"></script>
 </body>
 </html>
