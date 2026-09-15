@@ -2,14 +2,14 @@
 import { state } from './app.js';
 import { CommandsMode } from './commands.js';
 import { AirWritingMode } from './airwriting.js';
+import { AnimationLabMode } from './animation_lab.js';
 import { playSound } from './audio.js';
 import { captureScreenshot } from './screenshot.js';
 
 export const MODES = {
     VIRTUAL_MOUSE: 'VIRTUAL_MOUSE',
     AIR_WRITING: 'AIR_WRITING',
-    PHYSICS: 'PHYSICS',
-    PARTICLES: 'PARTICLES',
+    ANIMATION_LAB: 'ANIMATION_LAB',
     SCREENSHOT: 'SCREENSHOT',
     COMMANDS: 'COMMANDS'
 };
@@ -65,8 +65,7 @@ function showRippleFeedback() {
 const modeHandlers = {
     [MODES.VIRTUAL_MOUSE]: VirtualMouseMode,
     [MODES.AIR_WRITING]: AirWritingMode,
-    [MODES.PHYSICS]: null,
-    [MODES.PARTICLES]: null,
+    [MODES.ANIMATION_LAB]: AnimationLabMode,
     [MODES.SCREENSHOT]: null,
     [MODES.COMMANDS]: CommandsMode
 };

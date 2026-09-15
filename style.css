@@ -414,3 +414,25 @@ canvas {
     box-shadow: 0 0 10px rgba(0, 243, 255, 0.5);
     text-shadow: 0 0 8px var(--primary-color);
 }
+
+.lab-btn {
+    background: rgba(10, 15, 30, 0.8);
+    border: 2px solid rgba(0, 243, 255, 0.4);
+    color: var(--text-color);
+    padding: 20px 15px;
+    font-family: 'Space Grotesk', sans-serif;
+    font-size: 1.1rem;
+    font-weight: bold;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: all 0.3s ease;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
+}
+
+.lab-btn:hover {
+    background: rgba(0, 243, 255, 0.2);
+    border-color: var(--primary-color);
+    transform: translateY(-5px);
+    box-shadow: 0 8px 25px rgba(0, 243, 255, 0.3);
+}

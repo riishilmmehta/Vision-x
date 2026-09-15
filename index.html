@@ -70,8 +70,7 @@
                 <div class="mode-selector">
                     <button class="mode-btn active" data-mode="VIRTUAL_MOUSE">🖱 VIRTUAL MOUSE</button>
                     <button class="mode-btn" data-mode="AIR_WRITING">✍ AIR WRITING</button>
-                    <button class="mode-btn" data-mode="PHYSICS">⚽ PHYSICS PLAYGROUND</button>
-                    <button class="mode-btn" data-mode="PARTICLES">✨ PARTICLE LAB</button>
+                    <button class="mode-btn" data-mode="ANIMATION_LAB">🧪 GESTURE ANIMATION LAB</button>
                     <button class="mode-btn" data-mode="SCREENSHOT">📸 SCREENSHOT</button>
                     <button class="mode-btn" data-mode="COMMANDS">🎮 GESTURE COMMANDS</button>
                 </div>
@@ -88,8 +87,34 @@
             <button class="tool-btn" id="btn-undo">↶ UNDO</button>
             <button class="tool-btn" id="btn-redo">↷ REDO</button>
             <button class="tool-btn" id="btn-clear">🗑 CLEAR</button>
-            <button class="tool-btn" id="btn-save">💾 SAVE</button>
-            <button class="tool-btn" id="btn-settings">⚙ SETTINGS</button>
+            
+            <div class="toolbar-divider" style="height: 1px; background: rgba(0,243,255,0.2); margin: 5px 0;"></div>
+            
+            <div class="toolbar-section">
+                <label style="color: var(--primary-color); font-size: 0.8rem; display: block; margin-bottom: 5px;">STABILITY</label>
+                <input type="range" id="slider-stability" min="0" max="100" value="75" style="width: 100%;">
+            </div>
+            
+            <div class="toolbar-section">
+                <label style="color: var(--primary-color); font-size: 0.8rem; display: block; margin-bottom: 5px;">DRAW MODE</label>
+                <select id="select-draw-mode" style="width: 100%; background: transparent; color: white; border: 1px solid rgba(0,243,255,0.5); padding: 5px;">
+                    <option value="CONTINUOUS" style="color: black;">Continuous (1 Finger)</option>
+                    <option value="PINCH" style="color: black;">Pinch to Draw</option>
+                </select>
+            </div>
+        </div>
+        
+        <div id="animation-lab-menu" class="glass-panel hidden" style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 100; width: 600px;">
+            <h2 style="color: var(--primary-color); text-align: center; margin-bottom: 20px;">GESTURE ANIMATION LAB</h2>
+            <div class="lab-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px;">
+                <button class="lab-btn" data-lab="WEB_SHOOTER">🕸 WEB SHOOTER</button>
+                <button class="lab-btn" data-lab="ENERGY_HAND">⚡ ENERGY HAND</button>
+                <button class="lab-btn" data-lab="PARTICLE_BLAST">🔥 PARTICLE BLAST</button>
+                <button class="lab-btn" data-lab="PORTAL">🌀 PORTAL</button>
+                <button class="lab-btn" data-lab="GRAVITY">🌌 GRAVITY FIELD</button>
+                <button class="lab-btn" data-lab="MAGNET">🧲 MAGNET HAND</button>
+                <button class="lab-btn" data-lab="PHYSICS_BALL">⚽ PHYSICS BALL</button>
+            </div>
         </div>
         
         <div id="virtual-cursor" class="virtual-cursor hidden"></div>
