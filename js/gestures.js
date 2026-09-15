@@ -1,7 +1,7 @@
 import { state } from './app.js';
+import { handleGestureAction, handleSwipe } from './modes.js';
 import { captureScreenshot } from './screenshot.js';
 import { playSound } from './audio.js';
-// We will import audio later when they are ready
 
 const uiGestureState = document.getElementById('ui-gesture-state');
 const uiCurrentGesture = document.getElementById('ui-current-gesture');
@@ -32,7 +32,11 @@ const gestureEngine = {
         pinchThreshold: 0.15, // Normalized distance relative to palm size
         confirmDuration: 150, // ms to hold gesture to confirm
         cooldownDuration: 200, // ms to wait after release
-    }
+    },
+    
+    // Swipe detection
+    history: [],
+    historyLength: 10
 };
 
 function getDistance(p1, p2) {
@@ -81,30 +85,75 @@ export function updateGestures(landmarks, handedness, timestamp) {
     } else if (thumbExt && indexExt && middleExt && ringExt && pinkyExt) {
         detectedGesture = 'OPEN_PALM';
         confidence = 0.9;
-    } else if (indexExt && middleExt && !ringExt && !pinkyExt) {
-        // V-Sign or Two-Finger Scroll
-        const indexMiddleDist = getDistance(hand[8], hand[12]) / palmSize;
-        if (indexMiddleDist > 0.4) {
-            detectedGesture = 'V_SIGN';
+    } else {
+        // Finger counting
+        let count = 0;
+        if (indexExt) count++;
+        if (middleExt) count++;
+        if (ringExt) count++;
+        if (pinkyExt) count++;
+        
+        if (count === 1 && indexExt) {
+            detectedGesture = 'ONE_FINGER';
+            confidence = 0.9;
+        } else if (count === 2 && indexExt && middleExt) {
+            const indexMiddleDist = getDistance(hand[8], hand[12]) / palmSize;
+            if (indexMiddleDist > 0.4) {
+                detectedGesture = 'V_SIGN';
+                confidence = 0.8;
+            } else {
+                detectedGesture = 'TWO_FINGERS'; // Or SCROLL depending on mode
+                confidence = 0.8;
+            }
+        } else if (count === 3) {
+            detectedGesture = 'THREE_FINGERS';
             confidence = 0.8;
-        } else {
-            detectedGesture = 'SCROLL';
+        } else if (count === 4) {
+            detectedGesture = 'FOUR_FINGERS';
             confidence = 0.8;
         }
     }
     
-    // If scrolling is ACTIVE, execute scroll
-    if (gestureEngine.state === GESTURE_STATES.ACTIVE && gestureEngine.currentGesture === 'SCROLL') {
-        const deltaY = state.cursorY - gestureEngine.lastCursorY;
-        window.scrollBy(0, deltaY * 2);
+    // Swipe detection logic
+    gestureEngine.history.push({ x: state.cursorX, y: state.cursorY, time: timestamp });
+    if (gestureEngine.history.length > gestureEngine.config.historyLength) {
+        gestureEngine.history.shift();
     }
     
-    // Store cursor position for scroll delta
-    if (gestureEngine.currentGesture === 'SCROLL') {
-        gestureEngine.lastCursorY = state.cursorY;
-    }
+    detectSwipe(timestamp);
 
     processStateMachine(detectedGesture, confidence, timestamp, handedness[0]);
+}
+
+function detectSwipe(timestamp) {
+    if (gestureEngine.history.length < 5) return;
+    if (gestureEngine.state === GESTURE_STATES.COOLDOWN) return;
+    if (state.currentGesture === 'PINCH' || state.currentGesture === 'FIST') return;
+
+    const oldest = gestureEngine.history[0];
+    const newest = gestureEngine.history[gestureEngine.history.length - 1];
+    
+    const dx = newest.x - oldest.x;
+    const dy = newest.y - oldest.y;
+    const dt = newest.time - oldest.time;
+    
+    if (dt === 0) return;
+    
+    const velocityX = dx / dt;
+    const velocityY = dy / dt;
+    
+    // Thresholds for swipe
+    if (Math.abs(velocityX) > 2.0 && Math.abs(velocityX) > Math.abs(velocityY) * 2) {
+        if (velocityX < 0) {
+            handleSwipe('LEFT');
+        } else {
+            handleSwipe('RIGHT');
+        }
+        // Force cooldown
+        gestureEngine.state = GESTURE_STATES.COOLDOWN;
+        gestureEngine.lastActiveTime = timestamp;
+        gestureEngine.history = [];
+    }
 }
 
 function processStateMachine(detectedGesture, confidence, timestamp, handInfo) {
@@ -171,13 +220,10 @@ function triggerGestureStart(gesture, handInfo) {
     
     if (gesture === 'PINCH') {
         state.isPinching = true;
-        // Simulate Mouse Down
-        triggerClickEvent('mousedown');
-        playSound('click');
-        showRippleFeedback();
-    } else if (gesture === 'V_SIGN') {
-        captureScreenshot();
     }
+    
+    // Dispatch to mode manager
+    handleGestureAction(gesture, handInfo, Date.now());
 }
 
 function triggerGestureEnd(gesture) {
@@ -185,11 +231,10 @@ function triggerGestureEnd(gesture) {
     
     if (gesture === 'PINCH') {
         state.isPinching = false;
-        // Simulate Mouse Up and Click
-        triggerClickEvent('mouseup');
-        triggerClickEvent('click');
-        playSound('click');
     }
+    
+    // Modes can also handle release if needed, but for now we dispatch an 'IDLE' or END signal
+    // handleGestureAction('RELEASE_' + gesture, null, Date.now());
 }
 
 function triggerClickEvent(eventType) {

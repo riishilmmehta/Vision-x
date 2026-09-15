@@ -25,6 +25,7 @@
             <video id="webcam" autoplay playsinline></video>
             <canvas id="output-canvas"></canvas>
             <canvas id="animation-canvas"></canvas>
+            <canvas id="drawing-canvas"></canvas>
         </div>
 
         <div class="hud">
@@ -67,10 +68,12 @@
 
             <div class="hud-bottom">
                 <div class="mode-selector">
-                    <button class="mode-btn active" data-mode="MOUSE">MOUSE</button>
-                    <button class="mode-btn" data-mode="PRESENTATION">PRESENTATION</button>
-                    <button class="mode-btn" data-mode="ANIMATION">ANIMATION</button>
-                    <button class="mode-btn" data-mode="EXPERIMENTAL">EXPERIMENTAL</button>
+                    <button class="mode-btn active" data-mode="VIRTUAL_MOUSE">🖱 VIRTUAL MOUSE</button>
+                    <button class="mode-btn" data-mode="AIR_WRITING">✍ AIR WRITING</button>
+                    <button class="mode-btn" data-mode="PHYSICS">⚽ PHYSICS PLAYGROUND</button>
+                    <button class="mode-btn" data-mode="PARTICLES">✨ PARTICLE LAB</button>
+                    <button class="mode-btn" data-mode="SCREENSHOT">📸 SCREENSHOT</button>
+                    <button class="mode-btn" data-mode="COMMANDS">🎮 GESTURE COMMANDS</button>
                 </div>
                 <div class="hud-stats">
                     <span id="ui-fps-mini">FPS: 0</span> | 
@@ -79,8 +82,29 @@
             </div>
         </div>
         
+        <div id="air-writing-toolbar" class="glass-panel hidden">
+            <button class="tool-btn active" data-tool="PEN">✏ PEN</button>
+            <button class="tool-btn" data-tool="ERASER">🧹 ERASER</button>
+            <button class="tool-btn" id="btn-undo">↶ UNDO</button>
+            <button class="tool-btn" id="btn-redo">↷ REDO</button>
+            <button class="tool-btn" id="btn-clear">🗑 CLEAR</button>
+            <button class="tool-btn" id="btn-save">💾 SAVE</button>
+            <button class="tool-btn" id="btn-settings">⚙ SETTINGS</button>
+        </div>
+        
         <div id="virtual-cursor" class="virtual-cursor hidden"></div>
+        <div id="pen-cursor" class="pen-cursor hidden">●</div>
         <div id="visual-feedback" class="visual-feedback"></div>
+    </div>
+    
+    <div id="exit-prompt" class="screen glass-panel hidden" style="z-index: 200;">
+        <div class="prompt-content" style="text-align: center;">
+            <h2 style="color: var(--primary-color);">EXIT AIR WRITING?</h2>
+            <div style="margin-top: 20px; display: flex; gap: 20px; justify-content: center;">
+                <button id="btn-exit-yes" class="btn-primary">YES</button>
+                <button id="btn-exit-cancel" class="btn-secondary">CANCEL</button>
+            </div>
+        </div>
     </div>
     
     <div id="error-screen" class="screen">

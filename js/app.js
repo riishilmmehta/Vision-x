@@ -3,6 +3,7 @@ import { initTracker, updateTracker } from './tracker.js';
 import { updateCursor } from './cursor.js';
 import { updateGestures } from './gestures.js';
 import { renderAnimations } from './animations.js';
+import { MODES, requestModeChange } from './modes.js';
 
 // Central Application State
 export const state = {
@@ -16,7 +17,7 @@ export const state = {
     cursorY: 0,
     isPinching: false,
     isDragging: false,
-    interactionMode: 'MOUSE', // MOUSE, PRESENTATION, ANIMATION, EXPERIMENTAL
+    interactionMode: MODES.VIRTUAL_MOUSE,
     fps: 0,
     sensitivity: 1.0,
     smoothing: 0.5,
@@ -138,8 +139,7 @@ ui.modeBtns.forEach(btn => {
     btn.addEventListener('click', (e) => {
         ui.modeBtns.forEach(b => b.classList.remove('active'));
         e.target.classList.add('active');
-        state.interactionMode = e.target.dataset.mode;
-        console.log("Mode switched to:", state.interactionMode);
+        requestModeChange(e.target.dataset.mode);
     });
 });
 
